@@ -1,0 +1,35 @@
+# IntelliJ IDEA
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Build tools
+target/
+project/target/
+project/project/
+
+# Metals (Scala language server)
+.metals/
+.bloop/
+project/.bloop/
+
+# BSP (Build Server Protocol)
+.bsp/
+
+# sbt specific
+lib_managed/
+src_managed/
+.cache/
+.history/
+
+# Logs
+*.log
+
+# Others
+*.class
+*.tmp
+.DS_Store
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
