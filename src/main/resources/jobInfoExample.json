@@ -1,0 +1,21 @@
+{
+    "company": "Tech Solutions Inc.",
+    "title": "",
+    "description": "We are looking for a Senior Software Engineer with expertise in building scalable, high-performance web applications.",
+    "externalUrl": "https://www.techsolutions.com/careers/senior-software-engineer",
+    "remote": true,
+    "location": "New York, NY",
+    "salaryLo": 120000,
+    "salaryHi": 150000,
+    "currency": "USD",
+    "country": "USA",
+    "tags": [
+        "software",
+        "engineering",
+        "full-stack",
+        "web development"
+    ],
+    "image": "https://www.techsolutions.com/images/careers/software-engineer.jpg",
+    "seniority": "Senior",
+    "other": "Health benefits included, flexible working hours"
+}
