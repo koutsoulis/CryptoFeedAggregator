@@ -12,6 +12,7 @@ import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.modules.LiveJobsDao
 import com.rockthejvm.jobsboard.dto
 import com.rockthejvm.jobsboard.domain
+import sttp.model.Uri
 
 object JobsPlayground extends IOApp.Simple {
 

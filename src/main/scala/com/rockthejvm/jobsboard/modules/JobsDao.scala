@@ -6,12 +6,16 @@ import com.rockthejvm.jobsboard.domain
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
+// import doobie.postgres.*
 import doobie.util.*
 import java.util.UUID
 import cats.effect.*
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
+
+// import com.rockthejvm.jobsboard.dto.uuid.*
+// import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
 
 trait JobsDao[F[_]] {
   // algebra
@@ -67,7 +71,23 @@ class LiveJobsDao[F[_]: Async] private (xa: Transactor[F]) extends JobsDao[F] {
             other,
             active
         ) VALUES (
-            $job
+            ${job.date},
+            ${job.ownerEmail},
+            ${job.company},
+            ${job.title},
+            ${job.description},
+            ${job.externalUrl},
+            ${job.remote},
+            ${job.location},
+            ${job.salaryLo},
+            ${job.salaryHi},
+            ${job.currency},
+            ${job.country},
+            ${job.tags},
+            ${job.image},
+            ${job.seniority},
+            ${job.other},
+            ${job.active}
         )
     """.update.withGeneratedKeys[UUID]("id").transact(xa).compile.last
 

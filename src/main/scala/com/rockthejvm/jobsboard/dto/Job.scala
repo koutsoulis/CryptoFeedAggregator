@@ -13,6 +13,8 @@ import io.scalaland.chimney.internal.runtime.TransformerCfg.Empty
 import io.scalaland.chimney.internal.runtime.TransformerFlags.Default
 import io.scalaland.chimney.internal.runtime.Path.Root
 import io.circe.Encoder
+import sttp.model.Uri
+// import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
 
 object Job {
   final case class WriteJob(
@@ -80,23 +82,23 @@ object Job {
         .buildTransformer
   }
 
-  def empty: WriteJob = WriteJob(
-    // id: UUID,
-    date = 12,
-    ownerEmail = "",
-    company = "",
-    title = "",
-    description = "",
-    externalUrl = "",
-    remote = false,
-    location = "",
-    salaryLo = None,
-    salaryHi = None,
-    currency = None,
-    country = None,
-    tags = None,
-    image = None,
-    seniority = None,
-    other = None
-  )
+  // def empty: WriteJob = WriteJob(
+  //   // id: UUID,
+  //   date = 12,
+  //   ownerEmail = "",
+  //   company = "",
+  //   title = "",
+  //   description = "",
+  //   externalUrl = Uri(""),
+  //   remote = false,
+  //   location = "",
+  //   salaryLo = None,
+  //   salaryHi = None,
+  //   currency = None,
+  //   country = None,
+  //   tags = None,
+  //   image = None,
+  //   seniority = None,
+  //   other = None
+  // )
 }

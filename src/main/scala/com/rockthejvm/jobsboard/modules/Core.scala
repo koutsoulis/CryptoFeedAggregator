@@ -9,7 +9,7 @@ import doobie.util.ExecutionContexts
 import org.http4s.server.Server
 import org.typelevel.log4cats
 
-class Core private (emberServer: Server)
+class Core private (_emberServer: Server)
 
 object Core {
   def apply[F[_]: Async: log4cats.LoggerFactory](): Resource[F, Core] = {

@@ -15,19 +15,34 @@ import org.http4s.server.middleware
 import org.typelevel.log4cats
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.http4s.HttpRoutes
+import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.swagger.bundle.SwaggerInterpreter
+import sttp.tapir.server.ServerEndpoint
 
 object EmberServer {
 
-  def apply[F[_]: Async: log4cats.LoggerFactory](httpApi: HttpApi[F]): Resource[F, Server] =
+  def apply[F[_]: Async: log4cats.LoggerFactory](httpApi: HttpApi[F]): Resource[F, Server] = {
+    val swaggerEndpoints: List[sttp.tapir.server.ServerEndpoint[Any, F]] = SwaggerInterpreter()
+      .fromServerEndpoints[F](
+        endpoints = List[ServerEndpoint[Any, F]](httpApi.endpoints),
+        title = "title required by swagger",
+        version = "version string"
+      )
+
     Resource.eval(MonadThrow[F].fromEither[EmberConfig](conf)).flatMap { conf =>
       EmberServerBuilder
         .default[F]
         .withHost(conf.host)
         .withPort(conf.port)
-        .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
+        // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
+        .withHttpApp(
+          errorMiddleware(
+            Http4sServerInterpreter
+              .apply[F]()
+              .toRoutes(swaggerEndpoints appended httpApi.endpoints)).orNotFound)
         .build
     }
-
+  }
   // def loggerMiddleware[F[_]: Async]() =
   //   middleware
   //     .Logger

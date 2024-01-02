@@ -19,6 +19,9 @@ lazy val logbackVersion = "1.4.0"
 lazy val slf4jVersion = "2.0.0"
 lazy val javaMailVersion = "1.6.2"
 lazy val catsMtlVersion = "1.3.0"
+lazy val apacheCommonsVersion = "1.8.0"
+
+import org.typelevel.scalacoptions.ScalacOptions
 
 lazy val server = (project in file(".")).settings(
   name := "typelevel-project",
@@ -32,6 +35,8 @@ lazy val server = (project in file(".")).settings(
     "org.http4s" %% "http4s-circe" % http4sVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
     "io.circe" %% "circe-generic" % circeVersion,
     "io.circe" %% "circe-fs2" % circeVersion,
     "org.tpolecat" %% "doobie-core" % doobieVersion,
@@ -51,7 +56,15 @@ lazy val server = (project in file(".")).settings(
     "org.testcontainers" % "testcontainers" % testContainerVersion % Test,
     "org.testcontainers" % "postgresql" % testContainerVersion % Test,
     "ch.qos.logback" % "logback-classic" % logbackVersion,
-    "org.typelevel" %% "cats-mtl" % catsMtlVersion
+    "org.typelevel" %% "cats-mtl" % catsMtlVersion,
+    "commons-validator" % "commons-validator" % apacheCommonsVersion
+  ),
+  Compile / tpolecatExcludeOptions ++= Set(
+    ScalacOptions.warnUnusedImports,
+    ScalacOptions.warnUnusedPrivates,
+    ScalacOptions.warnUnusedParams,
+    ScalacOptions.warnUnusedExplicits,
+    ScalacOptions.fatalWarnings
   )
 )
 
