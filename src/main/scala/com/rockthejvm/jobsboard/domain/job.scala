@@ -15,6 +15,7 @@ import io.scalaland.chimney.cats.*
 import io.scalaland.chimney
 import sttp.tapir.Schema.annotations.format
 import sttp.tapir.Schema.annotations.validate
+import monix.newtypes
 
 object job {
   case class Job(
@@ -25,10 +26,23 @@ object job {
       active: Boolean = false
   )
 
+  type Description = Description.Type
+
+  object Description
+      extends newtypes.NewtypeWrapped[String]
+      with newtypes.integrations.DerivedCirceCodec {
+    implicit val schema: Schema[Description] = Schema.string
+
+    given doobie.util.Get[Description] = ???
+
+    given doobie.util.Put[Description] =
+      doobie.util.Put[String].contramap(_.value)
+  }
+
   case class JobInfo(
       @validate(Validator.nonEmptyString) company: String,
       title: String,
-      description: String,
+      description: Description,
       externalUrl: String,
       remote: Boolean,
       location: String,
@@ -60,7 +74,7 @@ object job {
       JobInfo(
         "",
         "",
-        "",
+        Description.apply(""),
         "https://www.example.com/path/to/resource?query=123#section",
         false,
         "",
@@ -76,7 +90,7 @@ object job {
     def minimal(
         company: String,
         title: String,
-        description: String,
+        description: Description,
         externalUrl: String,
         remote: Boolean,
         location: String): JobInfo =

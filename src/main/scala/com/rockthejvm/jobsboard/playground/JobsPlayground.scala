@@ -13,6 +13,7 @@ import com.rockthejvm.jobsboard.modules.LiveJobsDao
 import com.rockthejvm.jobsboard.dto
 import com.rockthejvm.jobsboard.domain
 import sttp.model.Uri
+import com.rockthejvm.jobsboard.domain.job.Description
 
 object JobsPlayground extends IOApp.Simple {
 
@@ -30,7 +31,7 @@ object JobsPlayground extends IOApp.Simple {
   val jobInfo = JobInfo.minimal(
     company = "Rock the JVM",
     title = "Software Engineer",
-    description = "Best jobever",
+    description = Description.apply("some job description"),
     externalUrl = "rockthejvm.com",
     remote = true,
     location = "Anywhere"

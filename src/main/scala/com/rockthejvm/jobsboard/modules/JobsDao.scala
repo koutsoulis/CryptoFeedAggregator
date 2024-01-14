@@ -3,11 +3,10 @@ package com.rockthejvm.jobsboard.modules
 import com.rockthejvm.jobsboard.dto
 import com.rockthejvm.jobsboard.domain
 
-import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 // import doobie.postgres.*
-import doobie.util.*
+// import doobie.util.*
 import java.util.UUID
 import cats.effect.*
 import cats.*
@@ -21,7 +20,7 @@ trait JobsDao[F[_]] {
   // algebra
   // CRUD
 //   def create(ownerEmail: String, jobInfo: JobInfo): F[Option[UUID]]
-  def create(ownerEmail: String, job: dto.Job.WriteJob): F[Option[UUID]]
+  def create(job: dto.Job.WriteJob): F[Option[UUID]]
   def all(): F[List[dto.Job.ReadJob]]
   def find(id: UUID): F[Option[dto.Job.ReadJob]]
   def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[dto.Job.ReadJob]]
@@ -49,8 +48,8 @@ other: Option[String],
 active: Boolean
  */
 
-class LiveJobsDao[F[_]: Async] private (xa: Transactor[F]) extends JobsDao[F] {
-  override def create(ownerEmail: String, job: dto.Job.WriteJob): F[Option[UUID]] =
+class LiveJobsDao[F[_]: Async] private (xa: doobie.Transactor[F]) extends JobsDao[F] {
+  override def create(job: dto.Job.WriteJob): F[Option[UUID]] =
     sql"""
         INSERT INTO jobs(
             date,
@@ -71,23 +70,7 @@ class LiveJobsDao[F[_]: Async] private (xa: Transactor[F]) extends JobsDao[F] {
             other,
             active
         ) VALUES (
-            ${job.date},
-            ${job.ownerEmail},
-            ${job.company},
-            ${job.title},
-            ${job.description},
-            ${job.externalUrl},
-            ${job.remote},
-            ${job.location},
-            ${job.salaryLo},
-            ${job.salaryHi},
-            ${job.currency},
-            ${job.country},
-            ${job.tags},
-            ${job.image},
-            ${job.seniority},
-            ${job.other},
-            ${job.active}
+            $job
         )
     """.update.withGeneratedKeys[UUID]("id").transact(xa).compile.last
 
@@ -118,5 +101,5 @@ class LiveJobsDao[F[_]: Async] private (xa: Transactor[F]) extends JobsDao[F] {
 }
 
 object LiveJobsDao {
-  def apply[F[_]: Async](xa: Transactor[F]): LiveJobsDao[F] = new LiveJobsDao(xa)
+  def apply[F[_]: Async](xa: doobie.Transactor[F]): LiveJobsDao[F] = new LiveJobsDao(xa)
 }

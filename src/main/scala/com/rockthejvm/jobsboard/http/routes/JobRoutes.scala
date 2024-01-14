@@ -67,7 +67,7 @@ class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
     .serverLogic[F] { jobInfo =>
       val writeJobDto = WriteJob.of(jobInfo, "some@mail.com", 0, false)
       jobs
-        .create("some@email.com", writeJobDto)
+        .create(writeJobDto)
         .map(_.toRight(NotFound("")))
     }
 

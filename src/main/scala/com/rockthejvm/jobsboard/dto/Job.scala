@@ -14,6 +14,7 @@ import io.scalaland.chimney.internal.runtime.TransformerFlags.Default
 import io.scalaland.chimney.internal.runtime.Path.Root
 import io.circe.Encoder
 import sttp.model.Uri
+import job.Description.given
 // import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
 
 object Job {
@@ -22,7 +23,7 @@ object Job {
       ownerEmail: String,
       company: String,
       title: String,
-      description: String,
+      description: job.Description,
       externalUrl: String,
       remote: Boolean,
       location: String,
@@ -43,7 +44,7 @@ object Job {
       ownerEmail: String,
       company: String,
       title: String,
-      description: String,
+      description: job.Description,
       externalUrl: String,
       remote: Boolean,
       location: String,

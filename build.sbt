@@ -5,13 +5,16 @@ lazy val scala3Version = "3.3.1"
 
 lazy val circeVersion = "0.14.0"
 lazy val catsEffectVersion = "3.3.14"
+lazy val munitCEVersion = "2.0.0-M4"
 lazy val http4sVersion = "0.23.15"
 lazy val tapirVersion = "1.9.6"
-lazy val doobieVersion = "1.0.0-RC1"
+lazy val doobieVersion = "1.0.0-RC5"
 lazy val chimneyVersion = "0.8.3"
 lazy val pureConfigVersion = "0.17.4"
 lazy val log4catsVersion = "2.4.0"
 lazy val tsecVersion = "0.4.0"
+lazy val munitVersion = "0.7.29"
+lazy val weaverTestVersion = "0.8.3"
 lazy val scalaTestVersion = "3.2.12"
 lazy val scalaTestCatsEffectVersion = "1.4.0"
 lazy val testContainerVersion = "1.17.3"
@@ -20,6 +23,7 @@ lazy val slf4jVersion = "2.0.0"
 lazy val javaMailVersion = "1.6.2"
 lazy val catsMtlVersion = "1.3.0"
 lazy val apacheCommonsVersion = "1.8.0"
+lazy val monixNewtypesVersion = "0.2.3"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -42,7 +46,7 @@ lazy val server = (project in file(".")).settings(
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-postgres" % doobieVersion,
-    "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
+    "org.tpolecat" %% "doobie-weaver" % doobieVersion % Test,
     "io.scalaland" %% "chimney" % chimneyVersion,
     "io.scalaland" %% "chimney-cats" % chimneyVersion,
     "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
@@ -51,13 +55,17 @@ lazy val server = (project in file(".")).settings(
     "io.github.jmcardon" %% "tsec-http4s" % tsecVersion,
     "com.sun.mail" % "javax.mail" % javaMailVersion,
     "org.typelevel" %% "log4cats-noop" % log4catsVersion % Test,
-    "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
+    // "org.scalameta" %% "munit" % munitVersion % Test,
+    // "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % "test",
+    "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % Test,
     "org.typelevel" %% "cats-effect-testing-scalatest" % scalaTestCatsEffectVersion % Test,
     "org.testcontainers" % "testcontainers" % testContainerVersion % Test,
     "org.testcontainers" % "postgresql" % testContainerVersion % Test,
     "ch.qos.logback" % "logback-classic" % logbackVersion,
     "org.typelevel" %% "cats-mtl" % catsMtlVersion,
-    "commons-validator" % "commons-validator" % apacheCommonsVersion
+    "commons-validator" % "commons-validator" % apacheCommonsVersion,
+    "io.monix" %% "newtypes-core" % monixNewtypesVersion,
+    "io.monix" %% "newtypes-circe-v0-14" % monixNewtypesVersion
   ),
   Compile / tpolecatExcludeOptions ++= Set(
     ScalacOptions.warnUnusedImports,
