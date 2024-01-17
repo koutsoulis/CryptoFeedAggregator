@@ -55,6 +55,13 @@ class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
   case class Unknown(code: Int, msg: String) derives Codec.AsObject, tapir.Schema
   case object NoContent
 
+  val simpleRoute: ServerEndpoint[Any, F] = tapir
+    .endpoint
+    .get
+    .in("simple")
+    .out(statusCode(StatusCode(200)))
+    .serverLogicSuccess(_ => Async[F].pure(()))
+
   val createJobRoute2: ServerEndpoint[Any, F] = tapir
     .endpoint
     .in(tapir.json.circe.jsonBody[JobInfo])

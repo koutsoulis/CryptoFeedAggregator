@@ -12,7 +12,6 @@ lazy val doobieVersion = "1.0.0-RC5"
 lazy val chimneyVersion = "0.8.3"
 lazy val pureConfigVersion = "0.17.4"
 lazy val log4catsVersion = "2.4.0"
-lazy val tsecVersion = "0.4.0"
 lazy val munitVersion = "0.7.29"
 lazy val weaverTestVersion = "0.8.3"
 lazy val scalaTestVersion = "3.2.12"
@@ -24,6 +23,7 @@ lazy val javaMailVersion = "1.6.2"
 lazy val catsMtlVersion = "1.3.0"
 lazy val apacheCommonsVersion = "1.8.0"
 lazy val monixNewtypesVersion = "0.2.3"
+lazy val sttpClient3Version = "3.9.2"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -36,6 +36,7 @@ lazy val server = (project in file(".")).settings(
     "org.typelevel" %% "cats-effect" % catsEffectVersion,
     "org.http4s" %% "http4s-dsl" % http4sVersion,
     "org.http4s" %% "http4s-ember-server" % http4sVersion,
+    "org.http4s" %% "http4s-ember-client" % http4sVersion,
     "org.http4s" %% "http4s-circe" % http4sVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
@@ -52,7 +53,6 @@ lazy val server = (project in file(".")).settings(
     "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
     "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
     // "org.slf4j" % "slf4j-simple" % slf4jVersion,
-    "io.github.jmcardon" %% "tsec-http4s" % tsecVersion,
     "com.sun.mail" % "javax.mail" % javaMailVersion,
     "org.typelevel" %% "log4cats-noop" % log4catsVersion % Test,
     // "org.scalameta" %% "munit" % munitVersion % Test,
@@ -65,7 +65,9 @@ lazy val server = (project in file(".")).settings(
     "org.typelevel" %% "cats-mtl" % catsMtlVersion,
     "commons-validator" % "commons-validator" % apacheCommonsVersion,
     "io.monix" %% "newtypes-core" % monixNewtypesVersion,
-    "io.monix" %% "newtypes-circe-v0-14" % monixNewtypesVersion
+    "io.monix" %% "newtypes-circe-v0-14" % monixNewtypesVersion,
+    "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
+    "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version
   ),
   Compile / tpolecatExcludeOptions ++= Set(
     ScalacOptions.warnUnusedImports,
