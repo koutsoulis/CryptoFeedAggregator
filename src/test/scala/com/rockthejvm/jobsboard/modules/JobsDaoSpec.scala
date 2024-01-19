@@ -8,7 +8,7 @@ import cats.syntax.all.*
 import doobie.util.transactor
 import doobie.implicits.*
 import doobie.postgres.implicits.*
-import com.rockthejvm.jobsboard.dto.Job.WriteJob
+import com.rockthejvm.jobsboard.dto.postgres.job.WriteJob
 import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.domain.job
 import com.rockthejvm.jobsboard.modules.DoobieTestHelpers

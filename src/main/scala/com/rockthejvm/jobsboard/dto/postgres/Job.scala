@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.dto
+package com.rockthejvm.jobsboard.dto.postgres
 
 import java.util.UUID
 import io.scalaland.chimney
@@ -6,24 +6,17 @@ import io.scalaland.chimney.syntax.*
 import io.scalaland.chimney.dsl.*
 
 import com.rockthejvm.jobsboard.domain
-import io.scalaland.chimney.internal.runtime.TransformerCfg.FieldComputed
-import io.scalaland.chimney.internal.runtime.Path.Select
-import com.rockthejvm.jobsboard.domain.job
-import io.scalaland.chimney.internal.runtime.TransformerCfg.Empty
-import io.scalaland.chimney.internal.runtime.TransformerFlags.Default
-import io.scalaland.chimney.internal.runtime.Path.Root
 import io.circe.Encoder
-import sttp.model.Uri
-import job.Description.given
-// import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
+import com.rockthejvm.jobsboard.nominals
+// import job.Description.given
 
-object Job {
+object job {
   final case class WriteJob(
       date: Long,
       ownerEmail: String,
       company: String,
       title: String,
-      description: job.Description,
+      description: nominals.job.Description,
       externalUrl: String,
       remote: Boolean,
       location: String,
@@ -44,7 +37,7 @@ object Job {
       ownerEmail: String,
       company: String,
       title: String,
-      description: job.Description,
+      description: nominals.job.Description,
       externalUrl: String,
       remote: Boolean,
       location: String,
@@ -60,10 +53,14 @@ object Job {
   ) derives Encoder.AsObject
 
   object WriteJob {
-    def of(jobInfo: job.JobInfo, ownerEmail: String, date: Long, active: Boolean): WriteJob =
+    def of(
+        jobInfo: domain.job.JobInfo,
+        ownerEmail: String,
+        date: Long,
+        active: Boolean): WriteJob =
       chimney
         .Transformer
-        .define[job.JobInfo, WriteJob]
+        .define[domain.job.JobInfo, WriteJob]
         .withFieldConst(_.ownerEmail, ownerEmail)
         .withFieldConst(_.date, date)
         .withFieldConst(_.active, active)
@@ -72,7 +69,7 @@ object Job {
   }
 
   object ReadJob {
-    implicit val toDomain: chimney.Transformer[ReadJob, job.Job] =
+    implicit val toDomain: chimney.Transformer[ReadJob, domain.job.Job] =
       chimney
         .Transformer
         .define[ReadJob, domain.job.Job]

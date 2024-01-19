@@ -14,7 +14,7 @@ import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.modules.JobsDao
 import com.rockthejvm.jobsboard.domain
-import com.rockthejvm.jobsboard.dto.Job.WriteJob
+import com.rockthejvm.jobsboard.dto.postgres.job.WriteJob
 import scala.util.Try
 import org.http4s.HttpVersion
 import sttp.tapir

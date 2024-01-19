@@ -5,13 +5,13 @@ import com.rockthejvm.jobsboard.domain
 
 import doobie.implicits.*
 import doobie.postgres.implicits.*
-// import doobie.postgres.*
 // import doobie.util.*
 import java.util.UUID
 import cats.effect.*
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
+import com.rockthejvm.jobsboard.dto.postgres.job as pgDto
 
 // import com.rockthejvm.jobsboard.dto.uuid.*
 // import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
@@ -20,10 +20,10 @@ trait JobsDao[F[_]] {
   // algebra
   // CRUD
 //   def create(ownerEmail: String, jobInfo: JobInfo): F[Option[UUID]]
-  def create(job: dto.Job.WriteJob): F[Option[UUID]]
-  def all(): F[List[dto.Job.ReadJob]]
-  def find(id: UUID): F[Option[dto.Job.ReadJob]]
-  def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[dto.Job.ReadJob]]
+  def create(job: pgDto.WriteJob): F[Option[UUID]]
+  def all(): F[List[pgDto.ReadJob]]
+  def find(id: UUID): F[Option[pgDto.ReadJob]]
+  def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[pgDto.ReadJob]]
   def delete(id: UUID): F[Int]
 }
 
@@ -49,7 +49,7 @@ active: Boolean
  */
 
 class LiveJobsDao[F[_]: Async] private (xa: doobie.Transactor[F]) extends JobsDao[F] {
-  override def create(job: dto.Job.WriteJob): F[Option[UUID]] =
+  override def create(job: pgDto.WriteJob): F[Option[UUID]] =
     sql"""
         INSERT INTO jobs(
             date,
@@ -74,23 +74,23 @@ class LiveJobsDao[F[_]: Async] private (xa: doobie.Transactor[F]) extends JobsDa
         )
     """.update.withGeneratedKeys[UUID]("id").transact(xa).compile.last
 
-  override def all(): F[List[dto.Job.ReadJob]] =
+  override def all(): F[List[pgDto.ReadJob]] =
     sql"""
         SELECT *
         FROM jobs
-    """.query[dto.Job.ReadJob].to[List].transact(xa)
-  override def find(id: UUID): F[Option[dto.Job.ReadJob]] =
+    """.query[pgDto.ReadJob].to[List].transact(xa)
+  override def find(id: UUID): F[Option[pgDto.ReadJob]] =
     sql"""
         SELECT *
         FROM jobs
         WHERE id = $id
-    """.query[dto.Job.ReadJob].option.transact(xa)
-  override def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[dto.Job.ReadJob]] =
+    """.query[pgDto.ReadJob].option.transact(xa)
+  override def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[pgDto.ReadJob]] =
     sql"""
       INSERT INTO jobs
       VALUES $jobInfo
       ON CONFLICT (id) DO UPDATE
-    """.query[dto.Job.ReadJob].option.transact(xa)
+    """.query[pgDto.ReadJob].option.transact(xa)
 
   override def delete(id: UUID): F[Int] =
     sql"""

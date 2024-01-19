@@ -13,14 +13,16 @@ import pureconfig.ConfigReader.Result
 import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderFailures
 import scala.util.chaining.*
-import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import org.typelevel.log4cats.slf4j.loggerFactoryforSync
 
 object Main extends IOApp.Simple {
   override def run: IO[Unit] = {
-    Slf4jFactory.create[IO].flatMap { _ =>
-      jobsboard.modules.Core[IO]().useForever.as(ExitCode.Success)
-    }
+    implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
+
+    jobsboard
+      .modules
+      .Core[IO]
+      .useForever
+      .as(())
   }
 }

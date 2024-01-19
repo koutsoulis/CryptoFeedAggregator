@@ -19,7 +19,6 @@ import sttp.tapir.EndpointInput.Auth
 import sttp.tapir.EndpointInput.AuthType.OAuth2
 import sttp.model.StatusCode
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
-import sttp.tapir.EndpointIO.annotations.jsonbody
 import com.rockthejvm.jobsboard.modules.HttpApi.SecurityErr1
 import io.circe
 import io.circe.generic.semiauto.*
