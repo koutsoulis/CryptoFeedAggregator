@@ -68,6 +68,39 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
     )
   }
 
+  test("all preceded by 0 inserts") { implicit xa =>
+    queries.all.to[List].transact(xa).map { jobs => expect(jobs.size == 0) }
+  }
+
+  test("all preceded by 1 insert") { implicit xa =>
+    (insertJobQuery.run *> queries.all.to[List]).transact(xa).map { jobs =>
+      expect(jobs.size == 1)
+    }
+  }
+
+  test("all preceded by 2 inserts") { implicit xa =>
+    (insertJobQuery.run *> insertJobQuery.run *> queries.all.to[List]).transact(xa).map {
+      jobs => expect(jobs.size == 2)
+    }
+  }
+
+  // TODO maybe same as below
+  test("insert a job and delete it, returning count of deleted rows == 1") { implicit xa =>
+    insertJobQuery
+      .withGeneratedKeys[UUID]("id")
+      .compile
+      .lastOrError
+      .flatMap { uuidOfInserted => queries.delete(uuidOfInserted).run }
+      .transact(xa)
+      .map(deletedRows => expect(deletedRows == 1))
+  }
+
+  // TODO maybe dont test this, isntead test client in JobsDao where it should throw in this case
+  test("attempt to delete a job with the wrong UUID, returning count of deleted rows == 0") {
+    implicit xa =>
+      queries.delete(uuidStub).run.transact(xa).map(deletedRows => expect(deletedRows == 0))
+  }
+
   def uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
 
   def writeJobStub = WriteJob.of(
