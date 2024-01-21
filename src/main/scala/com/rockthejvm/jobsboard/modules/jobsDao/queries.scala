@@ -48,12 +48,29 @@ object queries {
         WHERE id = $id
     """.query[pgDto.ReadJob]
 
-  def update(id: UUID, jobInfo: domain.job.JobInfo): Query0[pgDto.ReadJob] =
+  def update(id: UUID, job: pgDto.WriteJob): Update0 =
     sql"""
-        INSERT INTO jobs
-        VALUES $jobInfo
-        ON CONFLICT (id) DO UPDATE
-    """.query[pgDto.ReadJob]
+        UPDATE jobs SET(
+            date,
+            ownerEmail,
+            company,
+            title,
+            description,
+            externalUrl,
+            remote,
+            location,
+            salaryLo,
+            salaryHi,
+            currency,
+            country,
+            tags,
+            image,
+            seniority,
+            other,
+            active
+        ) = ($job)
+        WHERE id = $id
+    """.update
 
   def delete(id: UUID): Update0 =
     sql"""

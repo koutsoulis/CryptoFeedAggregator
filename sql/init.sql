@@ -10,7 +10,7 @@ CREATE TABLE jobs(
     description text NOT NULL,
     externalUrl text NOT NULL DEFAULT false,
     remote boolean NOT NULL DEFAULT false,
-    location text,
+    location text NOT NULL,
     salaryLo integer,
     salaryHi integer, 
     currency text,

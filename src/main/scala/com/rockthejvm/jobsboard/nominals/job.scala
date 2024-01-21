@@ -11,7 +11,8 @@ object job {
       with newtypes.integrations.DerivedCirceCodec {
     implicit val schema: Schema[Description] = Schema.string
 
-    given doobie.util.Get[Description] = ???
+    given doobie.util.Get[Description] =
+      doobie.util.Get[String].map(Description.apply)
 
     given doobie.util.Put[Description] =
       doobie.util.Put[String].contramap(_.value)

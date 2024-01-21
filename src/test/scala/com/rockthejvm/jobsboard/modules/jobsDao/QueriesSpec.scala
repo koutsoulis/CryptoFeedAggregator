@@ -13,6 +13,7 @@ import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.domain.job
 import com.rockthejvm.jobsboard.modules.DoobieTestHelpers
 import doobie.util.update.Update0
+import java.util.UUID
 
 object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
 
@@ -32,7 +33,7 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
               description text NOT NULL,
               externalUrl text NOT NULL DEFAULT false,
               remote boolean NOT NULL DEFAULT false,
-              location text,
+              location text NOT NULL,
               salaryLo integer,
               salaryHi integer, 
               currency text,
@@ -54,7 +55,27 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
       }
       .map(xa => doobie.Transactor.after.set(xa, doobie.HC.rollback))
 
-  test("insert job") { implicit xa => check(insertJobQuery) }
+  test("insert job query typechecks") { implicit xa => check(insertJobQuery) }
+  test("all jobs query typechecks") { implicit xa => check(queries.all) }
+  test("find job query typechecks") { implicit xa => check(queries.find(uuidStub)) }
+  test("delete job query typechecks") { implicit xa => check(queries.delete(uuidStub)) }
+  test("update job query typechecks") { implicit xa =>
+    check(
+      queries.update(
+        uuidStub,
+        writeJobStub
+      )
+    )
+  }
+
+  def uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+
+  def writeJobStub = WriteJob.of(
+    jobInfo = JobInfo.empty,
+    ownerEmail = "someMail",
+    date = 2L,
+    active = false
+  )
 
   def insertJobQuery = queries
     .insert(
