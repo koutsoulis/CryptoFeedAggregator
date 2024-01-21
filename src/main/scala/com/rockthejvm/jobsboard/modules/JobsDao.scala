@@ -5,14 +5,13 @@ import com.rockthejvm.jobsboard.domain
 
 import doobie.implicits.*
 import doobie.postgres.implicits.*
-// import doobie.util.*
 import java.util.UUID
 import cats.effect.*
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
 import com.rockthejvm.jobsboard.dto.postgres.job as pgDto
-
+import jobsDao.queries
 // import com.rockthejvm.jobsboard.dto.uuid.*
 // import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
 
@@ -50,54 +49,17 @@ active: Boolean
 
 class LiveJobsDao[F[_]: Async] private (xa: doobie.Transactor[F]) extends JobsDao[F] {
   override def create(job: pgDto.WriteJob): F[Option[UUID]] =
-    sql"""
-        INSERT INTO jobs(
-            date,
-            ownerEmail,
-            company,
-            title,
-            description,
-            externalUrl,
-            remote,
-            location,
-            salaryLo,
-            salaryHi,
-            currency,
-            country,
-            tags,
-            image,
-            seniority,
-            other,
-            active
-        ) VALUES (
-            $job
-        )
-    """.update.withGeneratedKeys[UUID]("id").transact(xa).compile.last
+    queries.insert(job).withGeneratedKeys[UUID]("id").transact(xa).compile.last
 
   override def all(): F[List[pgDto.ReadJob]] =
-    sql"""
-        SELECT *
-        FROM jobs
-    """.query[pgDto.ReadJob].to[List].transact(xa)
+    queries.all.to[List].transact(xa)
   override def find(id: UUID): F[Option[pgDto.ReadJob]] =
-    sql"""
-        SELECT *
-        FROM jobs
-        WHERE id = $id
-    """.query[pgDto.ReadJob].option.transact(xa)
+    queries.find(id).option.transact(xa)
   override def update(id: UUID, jobInfo: domain.job.JobInfo): F[Option[pgDto.ReadJob]] =
-    sql"""
-      INSERT INTO jobs
-      VALUES $jobInfo
-      ON CONFLICT (id) DO UPDATE
-    """.query[pgDto.ReadJob].option.transact(xa)
+    queries.update(id, jobInfo).option.transact(xa)
 
   override def delete(id: UUID): F[Int] =
-    sql"""
-        DELETE
-        FROM jobs
-        WHERE id = $id
-    """.update.run.transact(xa)
+    queries.delete(id).run.transact(xa)
 }
 
 object LiveJobsDao {
