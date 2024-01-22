@@ -11,7 +11,8 @@ import cats.*
 import cats.data.*
 import cats.syntax.all.*
 import com.rockthejvm.jobsboard.dto.postgres.job as pgDto
-import jobsDao.queries
+import jobsDao.transactionParts.queries
+import jobsDao.TransactionParts
 // import com.rockthejvm.jobsboard.dto.uuid.*
 // import com.rockthejvm.jobsboard.domain.job.uriWitnesses.*
 
@@ -20,27 +21,37 @@ trait JobsDao[F[_]: Concurrent] {
   // CRUD
 //   def create(ownerEmail: String, jobInfo: JobInfo): F[Option[UUID]]
   def create(job: pgDto.WriteJob): F[Option[UUID]]
-  def all(): F[List[pgDto.ReadJob]]
+  def all: F[List[pgDto.ReadJob]]
   def find(id: UUID): F[Option[pgDto.ReadJob]]
-  def update(id: UUID, jobInfo: pgDto.WriteJob): F[Int]
-  def delete(id: UUID): F[Int]
+  def update(id: UUID, jobInfo: pgDto.WriteJob): F[Unit]
+  def delete(id: UUID): F[Unit]
 }
 
-class LiveJobsDao[F[_]: Concurrent] private (xa: doobie.Transactor[F]) extends JobsDao[F] {
+class LiveJobsDao[F[_]: Concurrent] private (
+    xa: doobie.Transactor[F],
+    transactionparts: TransactionParts)
+    extends JobsDao[F] {
   override def create(job: pgDto.WriteJob): F[Option[UUID]] =
-    queries.insert(job).withGeneratedKeys[UUID]("id").transact(xa).compile.last
+    transactionparts.create(job).transact(xa)
 
-  override def all(): F[List[pgDto.ReadJob]] =
-    queries.all.to[List].transact(xa)
+  override def all: F[List[pgDto.ReadJob]] =
+    transactionparts.all.transact(xa)
   override def find(id: UUID): F[Option[pgDto.ReadJob]] =
-    queries.find(id).option.transact(xa)
-  override def update(id: UUID, job: pgDto.WriteJob): F[Int] =
-    queries.update(id, job).run.transact(xa)
+    transactionparts.find(id).transact(xa)
+  override def update(id: UUID, job: pgDto.WriteJob): F[Unit] =
+    transactionparts.update(id, job).transact(xa).flatMap { updatedCount =>
+      ApplicativeThrow[F].raiseWhen(updatedCount != 1)(
+        new Exception(s"updatedCount == $updatedCount"))
+    }
 
-  override def delete(id: UUID): F[Int] =
-    queries.delete(id).run.transact(xa)
+  override def delete(id: UUID): F[Unit] =
+    transactionparts.delete(id).transact(xa).flatMap { deletedCount =>
+      ApplicativeThrow[F].raiseWhen(deletedCount != 1)(
+        new Exception(s"deletedCount == $deletedCount"))
+    }
 }
 
 object LiveJobsDao {
-  def apply[F[_]: Concurrent](xa: doobie.Transactor[F]): LiveJobsDao[F] = new LiveJobsDao(xa)
+  def apply[F[_]: Concurrent](xa: doobie.Transactor[F]): LiveJobsDao[F] =
+    new LiveJobsDao(xa, TransactionParts.apply)
 }

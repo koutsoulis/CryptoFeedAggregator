@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.modules.jobsDao
+package com.rockthejvm.jobsboard.modules.jobsDao.transactionParts
 
 import doobie.implicits.*
 import doobie.postgres.implicits.*
