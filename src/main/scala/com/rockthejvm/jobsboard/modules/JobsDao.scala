@@ -20,7 +20,7 @@ trait JobsDao[F[_]: Concurrent] {
   // algebra
   // CRUD
 //   def create(ownerEmail: String, jobInfo: JobInfo): F[Option[UUID]]
-  def create(job: pgDto.WriteJob): F[Option[UUID]]
+  def create(job: pgDto.WriteJob): F[UUID]
   def all: F[List[pgDto.ReadJob]]
   def find(id: UUID): F[Option[pgDto.ReadJob]]
   def update(id: UUID, jobInfo: pgDto.WriteJob): F[Unit]
@@ -31,7 +31,7 @@ class LiveJobsDao[F[_]: Concurrent] private (
     xa: doobie.Transactor[F],
     transactionparts: TransactionParts)
     extends JobsDao[F] {
-  override def create(job: pgDto.WriteJob): F[Option[UUID]] =
+  override def create(job: pgDto.WriteJob): F[UUID] =
     transactionparts.create(job).transact(xa)
 
   override def all: F[List[pgDto.ReadJob]] =

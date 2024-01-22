@@ -10,8 +10,8 @@ import cats.effect.kernel.Sync
 import cats.MonadThrow
 
 trait TransactionParts {
-  def create(job: pgDto.WriteJob): ConnectionIO[Option[UUID]] =
-    queries.insert(job).withGeneratedKeys[UUID]("id").compile.last
+  def create(job: pgDto.WriteJob): ConnectionIO[UUID] =
+    queries.insert(job).withGeneratedKeys[UUID]("id").compile.onlyOrError
 
   def all: ConnectionIO[List[pgDto.ReadJob]] =
     queries.all.to[List]

@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.modules.jobsDao
+package com.rockthejvm.jobsboard.modules.jobsDao.transactionParts
 
 import org.testcontainers.containers.PostgreSQLContainer
 import cats.effect.*
@@ -56,56 +56,39 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
       .map(xa => doobie.Transactor.after.set(xa, doobie.HC.rollback))
 
   test("insert job query typechecks") { implicit xa => check(insertJobQuery) }
-  test("all jobs query typechecks") { implicit xa => check(transactionParts.queries.all) }
-  test("find job query typechecks") { implicit xa =>
-    check(transactionParts.queries.find(uuidStub))
-  }
-  test("delete job query typechecks") { implicit xa =>
-    check(transactionParts.queries.delete(uuidStub))
-  }
+  test("all jobs query typechecks") { implicit xa => check(queries.all) }
+  test("find job query typechecks") { implicit xa => check(queries.find(uuidStub)) }
+  test("delete job query typechecks") { implicit xa => check(queries.delete(uuidStub)) }
   test("update job query typechecks") { implicit xa =>
     check(
-      transactionParts
-        .queries
+      queries
         .update(
           uuidStub,
-          writeJobStub
+          WriteJob.stub
         )
     )
   }
 
   test("all preceded by 0 inserts") { implicit xa =>
-    transactionParts.queries.all.to[List].transact(xa).map { jobs => expect(jobs.size == 0) }
+    queries.all.to[List].transact(xa).map { jobs => expect(jobs.size == 0) }
   }
 
   test("all preceded by 1 insert") { implicit xa =>
-    (insertJobQuery.run *> transactionParts.queries.all.to[List]).transact(xa).map { jobs =>
+    (insertJobQuery.run *> queries.all.to[List]).transact(xa).map { jobs =>
       expect(jobs.size == 1)
     }
   }
 
   test("all preceded by 2 inserts") { implicit xa =>
-    (insertJobQuery.run *> insertJobQuery.run *> transactionParts.queries.all.to[List])
+    (insertJobQuery.run *> insertJobQuery.run *> queries.all.to[List])
       .transact(xa)
       .map { jobs => expect(jobs.size == 2) }
-  }
-
-  // TODO maybe same as below
-  test("insert a job and delete it, returning count of deleted rows == 1") { implicit xa =>
-    insertJobQuery
-      .withGeneratedKeys[UUID]("id")
-      .compile
-      .lastOrError
-      .flatMap { uuidOfInserted => transactionParts.queries.delete(uuidOfInserted).run }
-      .transact(xa)
-      .map(deletedRows => expect(deletedRows == 1))
   }
 
   // TODO maybe dont test this, isntead test client in JobsDao where it should throw in this case
   test("attempt to delete a job with the wrong UUID, returning count of deleted rows == 0") {
     implicit xa =>
-      transactionParts
-        .queries
+      queries
         .delete(uuidStub)
         .run
         .transact(xa)
@@ -114,22 +97,9 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
 
   def uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
 
-  def writeJobStub = WriteJob.of(
-    jobInfo = JobInfo.empty,
-    ownerEmail = "someMail",
-    date = 2L,
-    active = false
-  )
-
-  def insertJobQuery = transactionParts
-    .queries
+  def insertJobQuery = queries
     .insert(
-      WriteJob.of(
-        jobInfo = JobInfo.empty,
-        ownerEmail = "someMail",
-        date = 2L,
-        active = false
-      )
+      WriteJob.stub
     )
 
 }

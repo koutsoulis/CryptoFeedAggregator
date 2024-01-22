@@ -66,6 +66,13 @@ object job {
         .withFieldConst(_.active, active)
         .buildTransformer
         .transform(jobInfo)
+
+    def stub = WriteJob.of(
+      jobInfo = domain.job.JobInfo.empty,
+      ownerEmail = "someMail",
+      date = 2L,
+      active = false
+    )
   }
 
   object ReadJob {

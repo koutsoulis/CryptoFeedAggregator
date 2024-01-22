@@ -63,19 +63,13 @@ class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
     .serverLogicSuccess(_ => Async[F].pure(()))
 
   val createJobRoute2: ServerEndpoint[Any, F] = tapir
-    .endpoint
+    .infallibleEndpoint
     .in(tapir.json.circe.jsonBody[JobInfo])
     .out(jsonBody[UUID])
-    .errorOut(
-      tapir.oneOf(
-        oneOfVariant(StatusCode.NotFound, jsonBody[NotFound].description("not found"))
-      )
-    )
-    .serverLogic[F] { jobInfo =>
+    .serverLogicSuccess[F] { jobInfo =>
       val writeJobDto = WriteJob.of(jobInfo, "some@mail.com", 0, false)
       jobs
         .create(writeJobDto)
-        .map(_.toRight(NotFound("")))
     }
 
   // private val createJobRoute: HttpRoutes[F] = HttpRoutes.of {
