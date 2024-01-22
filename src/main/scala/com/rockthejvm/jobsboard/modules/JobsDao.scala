@@ -39,16 +39,10 @@ class LiveJobsDao[F[_]: Concurrent] private (
   override def find(id: UUID): F[Option[pgDto.ReadJob]] =
     transactionparts.find(id).transact(xa)
   override def update(id: UUID, job: pgDto.WriteJob): F[Unit] =
-    transactionparts.update(id, job).transact(xa).flatMap { updatedCount =>
-      ApplicativeThrow[F].raiseWhen(updatedCount != 1)(
-        new Exception(s"updatedCount == $updatedCount"))
-    }
+    transactionparts.update(id, job).transact(xa)
 
   override def delete(id: UUID): F[Unit] =
-    transactionparts.delete(id).transact(xa).flatMap { deletedCount =>
-      ApplicativeThrow[F].raiseWhen(deletedCount != 1)(
-        new Exception(s"deletedCount == $deletedCount"))
-    }
+    transactionparts.delete(id).transact(xa)
 }
 
 object LiveJobsDao {

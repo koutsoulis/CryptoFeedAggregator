@@ -6,6 +6,8 @@ import com.rockthejvm.jobsboard.dto.postgres.job as pgDto
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 import transactionParts.queries
+import cats.effect.kernel.Sync
+import cats.MonadThrow
 
 trait TransactionParts {
   def create(job: pgDto.WriteJob): ConnectionIO[Option[UUID]] =
@@ -17,11 +19,18 @@ trait TransactionParts {
   def find(id: UUID): ConnectionIO[Option[pgDto.ReadJob]] =
     queries.find(id).option
 
-  def update(id: UUID, job: pgDto.WriteJob): ConnectionIO[Int] =
-    queries.update(id, job).run
+  def update(id: UUID, job: pgDto.WriteJob): ConnectionIO[Unit] =
+    queries.update(id, job).run.flatMap { updatedCount =>
+      MonadThrow[ConnectionIO].raiseWhen(updatedCount != 1)(
+        new Exception(s"updatedCount == $updatedCount"))
+    }
 
-  def delete(id: UUID): ConnectionIO[Int] =
-    queries.delete(id).run
+  def delete(id: UUID): ConnectionIO[Unit] =
+    queries.delete(id).run.flatMap { deletedCount =>
+      MonadThrow[ConnectionIO].raiseWhen(deletedCount != 1)(
+        new Exception(s"deletedCount == $deletedCount"))
+    }
+
 }
 
 object TransactionParts {
