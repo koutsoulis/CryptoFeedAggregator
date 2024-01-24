@@ -53,11 +53,7 @@ object job {
   ) derives Encoder.AsObject
 
   object WriteJob {
-    def of(
-        jobInfo: domain.job.JobInfo,
-        ownerEmail: String,
-        date: Long,
-        active: Boolean): WriteJob =
+    def of(jobInfo: domain.job.JobInfo, ownerEmail: String, date: Long, active: Boolean): WriteJob =
       chimney
         .Transformer
         .define[domain.job.JobInfo, WriteJob]
@@ -85,6 +81,12 @@ object job {
           jobDto => jobDto.into[domain.job.JobInfo].transform
         )
         .buildTransformer
+
+    def of(uuid: UUID, writeJob: WriteJob): ReadJob =
+      chimney
+        .Transformer.define[WriteJob, ReadJob]
+        .withFieldConst(_.id, uuid)
+        .buildTransformer.transform(writeJob)
   }
 
   // def empty: WriteJob = WriteJob(
