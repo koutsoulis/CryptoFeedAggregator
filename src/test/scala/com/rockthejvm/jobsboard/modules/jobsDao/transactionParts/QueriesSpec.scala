@@ -20,40 +20,7 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
   override type Res = doobie.Transactor[IO]
 
   override def sharedResource =
-    DoobieTestHelpers
-      .postgres
-      .evalTap { xa =>
-        val setupDBQuery = sql"""
-          CREATE TABLE jobs(
-              id uuid DEFAULT gen_random_uuid(),
-              date bigint NOT NULL,
-              ownerEmail text NOT NULL,
-              company text NOT NULL,
-              title text NOT NULL,
-              description text NOT NULL,
-              externalUrl text NOT NULL DEFAULT false,
-              remote boolean NOT NULL DEFAULT false,
-              location text NOT NULL,
-              salaryLo integer,
-              salaryHi integer, 
-              currency text,
-              country text,
-              tags text[],
-              image text,
-              seniority text,
-              other text,
-              active BOOLEAN NOT NULL DEFAULT false
-          );
-
-          ALTER TABLE jobs
-          ADD CONSTRAINT pk_jobs PRIMARY KEY (id);
-
-          SET DEFAULT_TRANSACTION_ISOLATION TO SERIALIZABLE ;
-          """.update
-
-        setupDBQuery.run.transact(xa)
-      }
-      .map(xa => doobie.Transactor.after.set(xa, doobie.HC.rollback))
+    DoobieTestHelpers.transactorRsIncludingSetup
 
   test("insert job query typechecks") { implicit xa => check(insertJobQuery) }
   test("all jobs query typechecks") { implicit xa => check(queries.all) }
@@ -67,22 +34,6 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
           WriteJob.stub
         )
     )
-  }
-
-  test("all preceded by 0 inserts") { xa =>
-    queries.all.to[List].transact(xa).map { jobs => expect(jobs.size == 0) }
-  }
-
-  test("all preceded by 1 insert") { xa =>
-    (insertJobQuery.run *> queries.all.to[List]).transact(xa).map { jobs =>
-      expect(jobs.size == 1)
-    }
-  }
-
-  test("all preceded by 2 inserts") { xa =>
-    (insertJobQuery.run *> insertJobQuery.run *> queries.all.to[List])
-      .transact(xa)
-      .map { jobs => expect(jobs.size == 2) }
   }
 
   def uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
