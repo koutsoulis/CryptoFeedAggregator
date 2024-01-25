@@ -22,6 +22,13 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
   override def sharedResource =
     DoobieTestHelpers.transactorRsIncludingSetup
 
+  val uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+
+  val insertJobQuery = queries
+    .insert(
+      WriteJob.stub
+    )
+
   test("insert job query typechecks") { implicit xa => check(insertJobQuery) }
   test("all jobs query typechecks") { implicit xa => check(queries.all) }
   test("find job query typechecks") { implicit xa => check(queries.find(uuidStub)) }
@@ -35,12 +42,5 @@ object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
         )
     )
   }
-
-  def uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
-
-  def insertJobQuery = queries
-    .insert(
-      WriteJob.stub
-    )
 
 }

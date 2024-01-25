@@ -21,6 +21,8 @@ object TransactionPartsSpec extends weaver.IOSuite with doobie.weaver.IOChecker 
   override def sharedResource =
     DoobieTestHelpers.transactorRsIncludingSetup
 
+  val tParts = TransactionParts.apply
+
   test("insert a job and delete it; should succeed") { xa =>
     val insertAndDelete =
       tParts.create(pgDto.WriteJob.stub).flatMap { id => tParts.delete(id) }
@@ -56,6 +58,4 @@ object TransactionPartsSpec extends weaver.IOSuite with doobie.weaver.IOChecker 
         expect(rows.contains(pgDto.ReadJob.of(uuid, updatedWriteJob)))
       }
   }
-
-  lazy val tParts = TransactionParts.apply
 }
