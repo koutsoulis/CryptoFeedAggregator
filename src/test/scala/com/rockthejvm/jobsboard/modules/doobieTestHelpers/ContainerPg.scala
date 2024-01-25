@@ -9,7 +9,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 object ContainerPg {
   def transactorResource: Resource[IO, doobie.Transactor[IO]] =
     (
-      doobie.ExecutionContexts.fixedThreadPool[IO](32),
+      doobie.ExecutionContexts.fixedThreadPool[IO](32), // 32 from rockthejvm course, not clear why; investigate
       psqlContainerRs
     ).flatMapN { case (execCtx, container) =>
       doobie

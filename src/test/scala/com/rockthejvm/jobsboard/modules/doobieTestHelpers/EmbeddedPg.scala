@@ -18,6 +18,8 @@ object EmbeddedPg {
       Config(jdbcUrl)
     }.flatMap(HikariTransactor.fromConfig(_))
 
-  private def dbName = "postgres"
-  private def username = "postgres"
+  private def dbName =
+    "postgres" // consistent with hardcoded values in io.zonky.test.db.postgres.embedded.EmbeddedPostgres
+  private def username =
+    "postgres" // consistent with hardcoded values in io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 }
