@@ -29,7 +29,7 @@ lazy val embeddedPostgresVersion = "2.0.6"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
-lazy val server = (project in file(".")).settings(
+lazy val server = (project in file("server")).settings(
   name := "typelevel-project",
   scalaVersion := scala3Version,
   organization := rockthejvm,

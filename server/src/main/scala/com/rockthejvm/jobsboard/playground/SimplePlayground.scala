@@ -23,7 +23,7 @@ object SimplePlayground {
   ) = {
     fInt.map { either =>
       either.leftFlatMap {
-        case _: Error1            => Either.left(Error4)
+        case _: Error1 => Either.left(Error4)
         case e: (Error3 | Error2) => Either.left(e)
       }
     }

@@ -21,14 +21,12 @@ trait TransactionParts {
 
   def update(id: UUID, job: pgDto.WriteJob): ConnectionIO[Unit] =
     queries.update(id, job).run.flatMap { updatedCount =>
-      MonadThrow[ConnectionIO].raiseWhen(updatedCount != 1)(
-        new Exception(s"updatedCount == $updatedCount"))
+      MonadThrow[ConnectionIO].raiseWhen(updatedCount != 1)(new Exception(s"updatedCount == $updatedCount"))
     }
 
   def delete(id: UUID): ConnectionIO[Unit] =
     queries.delete(id).run.flatMap { deletedCount =>
-      MonadThrow[ConnectionIO].raiseWhen(deletedCount != 1)(
-        new Exception(s"deletedCount == $deletedCount"))
+      MonadThrow[ConnectionIO].raiseWhen(deletedCount != 1)(new Exception(s"deletedCount == $deletedCount"))
     }
 
 }

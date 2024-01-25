@@ -27,9 +27,7 @@ trait JobsDao[F[_]: Concurrent] {
   def delete(id: UUID): F[Unit]
 }
 
-class LiveJobsDao[F[_]: Concurrent] private (
-    xa: doobie.Transactor[F],
-    transactionparts: TransactionParts)
+class LiveJobsDao[F[_]: Concurrent] private (xa: doobie.Transactor[F], transactionparts: TransactionParts)
     extends JobsDao[F] {
   override def create(job: pgDto.WriteJob): F[UUID] =
     transactionparts.create(job).transact(xa)

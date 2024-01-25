@@ -33,26 +33,25 @@ object EmberServer {
     (
       Http4sBackend.usingDefaultEmberClientBuilder[F](),
       Resource.eval(MonadThrow[F].fromEither[EmberConfig](conf))
-    ).parFlatMapN {
-      case (backend, conf) =>
-        EmberServerBuilder
-          .default[F]
-          .withHost(conf.host)
-          .withPort(conf.port)
-          // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
-          .withHttpApp(
-            errorMiddleware(
-              Http4sServerInterpreter
-                .apply[F]()
-                .toRoutes(
-                  swaggerEndpoints
-                    .appended(httpApi.loginRoute)
-                    .appended(httpApi.oAuthRedirectRoute(backend))
-                    .appended(httpApi.endpoints)
-                )
-            ).orNotFound
-          )
-          .build
+    ).parFlatMapN { case (backend, conf) =>
+      EmberServerBuilder
+        .default[F]
+        .withHost(conf.host)
+        .withPort(conf.port)
+        // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
+        .withHttpApp(
+          errorMiddleware(
+            Http4sServerInterpreter
+              .apply[F]()
+              .toRoutes(
+                swaggerEndpoints
+                  .appended(httpApi.loginRoute)
+                  .appended(httpApi.oAuthRedirectRoute(backend))
+                  .appended(httpApi.endpoints)
+              )
+          ).orNotFound
+        )
+        .build
     }
   }
   // def loggerMiddleware[F[_]: Async]() =
