@@ -7,6 +7,9 @@ import cats.syntax.all.*
 // import cats.mtl.syntax.*
 
 object SimplePlayground {
+  private def exampleFromCommonSubproject =
+    com.rockthejvm.Example // proof that common subproject definitions are accessible
+
   sealed trait Error1
   sealed trait Error2
   sealed trait Error3
