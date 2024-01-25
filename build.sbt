@@ -25,6 +25,7 @@ lazy val apacheCommonsVersion = "1.8.0"
 lazy val monixNewtypesVersion = "0.2.3"
 lazy val sttpClient3Version = "3.9.2"
 lazy val monocleVersion = "3.2.0"
+lazy val embeddedPostgresVersion = "2.0.6"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -70,7 +71,8 @@ lazy val server = (project in file(".")).settings(
     "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
     "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
     "dev.optics" %% "monocle-core" % monocleVersion,
-    "dev.optics" %% "monocle-macro" % monocleVersion
+    "dev.optics" %% "monocle-macro" % monocleVersion,
+    "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion
   ),
   Compile / tpolecatExcludeOptions ++= Set(
     ScalacOptions.warnUnusedImports,

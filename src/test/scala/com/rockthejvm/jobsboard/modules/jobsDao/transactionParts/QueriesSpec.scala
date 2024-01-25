@@ -14,13 +14,14 @@ import com.rockthejvm.jobsboard.domain.job
 import com.rockthejvm.jobsboard.modules.DoobieTestHelpers
 import doobie.util.update.Update0
 import java.util.UUID
+import com.rockthejvm.jobsboard.modules.doobieTestHelpers.EmbeddedPg
 
 object QueriesSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
 
   override type Res = doobie.Transactor[IO]
 
   override def sharedResource =
-    DoobieTestHelpers.transactorRsIncludingSetup
+    new DoobieTestHelpers(EmbeddedPg.transactorResource).transactorRsIncludingSetup
 
   val uuidStub = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
 

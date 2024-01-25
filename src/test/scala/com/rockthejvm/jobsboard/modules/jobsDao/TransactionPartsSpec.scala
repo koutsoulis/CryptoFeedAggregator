@@ -13,13 +13,14 @@ import com.rockthejvm.jobsboard.dto.postgres.job as pgDto
 import doobie.free.connection.ConnectionIO
 import com.rockthejvm.jobsboard.modules.jobsDao.transactionParts.QueriesSpec.uuidStub
 import monocle.macros.GenLens
+import com.rockthejvm.jobsboard.modules.doobieTestHelpers.EmbeddedPg
 
 object TransactionPartsSpec extends weaver.IOSuite with doobie.weaver.IOChecker {
 
   override type Res = doobie.Transactor[IO]
 
   override def sharedResource =
-    DoobieTestHelpers.transactorRsIncludingSetup
+    new DoobieTestHelpers(EmbeddedPg.transactorResource).transactorRsIncludingSetup
 
   val tParts = TransactionParts.apply
 

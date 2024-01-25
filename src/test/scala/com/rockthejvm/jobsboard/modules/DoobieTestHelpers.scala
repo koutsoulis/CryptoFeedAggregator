@@ -8,9 +8,10 @@ import cats.data.*
 import cats.syntax.all.*
 import org.testcontainers.containers.PostgreSQLContainer
 import com.zaxxer.hikari.HikariConfig
+import doobieTestHelpers.EmbeddedPg
 
-object DoobieTestHelpers {
-  def transactorRsIncludingSetup = transactorRs
+class DoobieTestHelpers(transactorResource: Resource[IO, doobie.Transactor[IO]]) {
+  def transactorRsIncludingSetup = transactorResource
     .evalTap { xa =>
       val setupDBQuery = sql"""
               CREATE TABLE jobs(
@@ -43,31 +44,4 @@ object DoobieTestHelpers {
       setupDBQuery.run.transact(xa)
     }
     .map(xa => doobie.Transactor.after.set(xa, doobie.HC.rollback))
-
-  private def transactorRs: Resource[IO, doobie.Transactor[IO]] =
-    (
-      doobie.ExecutionContexts.fixedThreadPool[IO](32),
-      psqlContainerRs
-    ).flatMapN { case (execCtx, container) =>
-      doobie
-        .hikari
-        .HikariTransactor
-        .newHikariTransactor[IO](
-          driverClassName = container.getDriverClassName(),
-          url = container.getJdbcUrl(),
-          user = container.getUsername(),
-          pass = container.getPassword(),
-          connectEC = execCtx
-        )
-    }
-
-  private def psqlContainerRs =
-    Resource.fromAutoCloseable(
-      IO.blocking {
-        val container = PostgreSQLContainer("postgres")
-        container.start()
-
-        container
-      }
-    )
 }
