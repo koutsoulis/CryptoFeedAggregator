@@ -19,6 +19,7 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.server.ServerEndpoint
 import sttp.client3.http4s.Http4sBackend
+import org.http4s.server.middleware.CORS
 
 object EmberServer {
 
@@ -40,7 +41,7 @@ object EmberServer {
         .withPort(conf.port)
         // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
         .withHttpApp(
-          errorMiddleware(
+          middlewares(
             Http4sServerInterpreter
               .apply[F]()
               .toRoutes(
@@ -63,17 +64,27 @@ object EmberServer {
   //       logAction = Some((msg: String) => Console[F].println(msg))
   //     )
 
-  def errorMiddleware[F[_]: Async: log4cats.LoggerFactory](service: HttpRoutes[F]) =
-    middleware
-      .ErrorAction
-      .httpRoutes[F](
-        httpRoutes = service,
-        (req, throwable) =>
-          log4cats
-            .LoggerFactory
-            .getLogger
-            .error(ctx = Map("sessionId" -> "mockIdValue"), throwable)(throwable.getMessage())
-      )
+  def middlewares[F[_]: Async: log4cats.LoggerFactory](service: HttpRoutes[F]): HttpRoutes[F] = {
+
+    // temporary; for manual testing requests from front end which is served on :1234 while backend server is on :4041
+    // which Single Origin Policy disallows
+    def corsMiddleware[F[_]: Async](service: HttpRoutes[F]): HttpRoutes[F] =
+      CORS.policy.withAllowOriginAll.httpRoutes[F](service)
+
+    def errorMiddleware[F[_]: Async: log4cats.LoggerFactory](service: HttpRoutes[F]): HttpRoutes[F] =
+      middleware
+        .ErrorAction
+        .httpRoutes[F](
+          httpRoutes = service,
+          (req, throwable) =>
+            log4cats
+              .LoggerFactory
+              .getLogger
+              .error(ctx = Map("sessionId" -> "mockIdValue"), throwable)(throwable.getMessage())
+        )
+
+    corsMiddleware[F].compose(errorMiddleware[F]).apply(service)
+  }
 
   def conf: Either[Throwable, EmberConfig] =
     ConfigSource
