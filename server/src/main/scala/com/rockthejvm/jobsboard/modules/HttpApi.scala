@@ -89,24 +89,25 @@ class HttpApi[F[_]: Async] private (jobs: JobsDao[F]) {
     val jobRoutes =
       routes.JobRoutes[F](jobs).simpleRoute
 
-    val res = jobRoutes.prependSecurity(
-      additionalSecurityInput = inputAuth,
-      securityErrorOutput = tapir.oneOf[SecurityErr](
-        tapir.oneOfVariant(StatusCode(401), jsonBody[SecurityErr1])
-      )
-    )(
-      additionalSecurityLogic = { token =>
-        // Async[F].pure(().asRight[SecurityErr1.type | SecurityErr2.type])
-        Async[F].pure {
-          JwtCirce
-            .decodeAll(token, jwtKey, Seq(jwtAlgo))
-            .toEither
-            .left
-            .map(cause => SecurityErr1(cause.getMessage()))
-            .void
-        }
-      }
-    )
+    val res = jobRoutes
+    // .prependSecurity(
+    //   additionalSecurityInput = inputAuth,
+    //   securityErrorOutput = tapir.oneOf[SecurityErr](
+    //     tapir.oneOfVariant(StatusCode(401), jsonBody[SecurityErr1])
+    //   )
+    // )(
+    //   additionalSecurityLogic = { token =>
+    //     // Async[F].pure(().asRight[SecurityErr1.type | SecurityErr2.type])
+    //     Async[F].pure {
+    //       JwtCirce
+    //         .decodeAll(token, jwtKey, Seq(jwtAlgo))
+    //         .toEither
+    //         .left
+    //         .map(cause => SecurityErr1(cause.getMessage()))
+    //         .void
+    //     }
+    //   }
+    // )
 
     res
   }
@@ -117,9 +118,7 @@ object HttpApi {
   def apply[F[_]: Async](jobs: JobsDao[F]): HttpApi[F] = new HttpApi[F](jobs)
 
   trait SecurityErr
-  case class SecurityErr1(cause: String) extends SecurityErr
-      derives circe.Codec.AsObject,
-        tapir.Schema
+  case class SecurityErr1(cause: String) extends SecurityErr derives circe.Codec.AsObject, tapir.Schema
   case object SecurityErr2 extends SecurityErr derives circe.Codec.AsObject, tapir.Schema
   // case object SecurityErr3 derives circe.Codec.AsObject, tapir.Schema
 

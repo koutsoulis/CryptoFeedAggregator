@@ -4,7 +4,9 @@ import cats.effect.*
 import tyrian.*
 import tyrian.Html.*
 // import scala.util.Try
-import com.rockthejvm.jobsboard.pages.Page.NavigateTo
+// import com.rockthejvm.jobsboard.pages.Page.NavigateTo
+// import tyrian.cmds.Logger
+import org.http4s.dom.FetchClientBuilder
 
 object Page {
   sealed trait Msg
@@ -34,17 +36,23 @@ object Page {
   //   case Url.Home => ???
   //   case Url.Empty => ???
   // }
+
+  def update(msg: Msg): (Page, Cmd[IO, Msg]) = msg match {
+    case NavigateTo(page) =>
+      // page -> Logger.consoleLog[IO]("LOG THIS THING")
+      page ->
+        Cmd
+          .SideEffect(
+            FetchClientBuilder[IO]
+              .create.statusFromString(s"http://localhost:4041/simple")
+          )
+  }
 }
 
 trait Page {
   import Page.Msg
 
   def initCmd: Cmd[IO, Msg]
-
-  def update(msg: Msg): (Page, Cmd[IO, Msg]) = msg match {
-    case NavigateTo(page) =>
-      page -> Cmd.None
-  }
 
   def view: Html[Msg]
 }

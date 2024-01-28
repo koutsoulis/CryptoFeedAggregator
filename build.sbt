@@ -8,11 +8,16 @@ lazy val scala3Version = "3.3.1"
 // Common - contains domain model
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+lazy val http4sVersion = "0.23.25"
+
 lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(
     name := "common",
     scalaVersion := scala3Version,
-    organization := rockthejvm
+    organization := rockthejvm,
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-client" % http4sVersion
+    )
   )
   .jvmSettings(
     // add here if necessary
@@ -25,7 +30,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
 // Frontend
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-lazy val tyrianVersion = "0.6.1"
+lazy val tyrianVersion = "0.10.0"
 lazy val fs2DomVersion = "0.1.0"
 lazy val laikaVersion = "0.19.0"
 lazy val circeVersion = "0.14.0"
@@ -42,16 +47,16 @@ lazy val app = (project in file("app"))
       "org.planet42" %%% "laika-core" % laikaVersion,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-parser" % circeVersion,
-      "io.circe" %%% "circe-generic" % circeVersion
+      "io.circe" %%% "circe-generic" % circeVersion,
+      "org.http4s" %%% "http4s-dom" % "0.2.11"
     ),
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
     semanticdbEnabled := true,
     autoAPIMappings := true
-  )
+  ).dependsOn(common.js)
 
 lazy val catsEffectVersion = "3.3.14"
 lazy val munitCEVersion = "2.0.0-M4"
-lazy val http4sVersion = "0.23.15"
 lazy val tapirVersion = "1.9.6"
 lazy val doobieVersion = "1.0.0-RC5"
 lazy val chimneyVersion = "0.8.3"

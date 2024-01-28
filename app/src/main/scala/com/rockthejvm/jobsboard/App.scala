@@ -8,10 +8,12 @@ import cats.effect.IO
 // import com.rockthejvm.jobsboard.core.Router
 import com.rockthejvm.jobsboard.pages.Page
 import com.rockthejvm.jobsboard.pages.HomePage
-import com.rockthejvm.jobsboard.pages.Page.NavigateTo
+// import com.rockthejvm.jobsboard.pages.Page.NavigateTo
 
 object App {
-  type Msg = Page.Msg
+  type Msg = Page.Msg | NoOperation.type
+
+  case object NoOperation
 
   case class Model(page: Page) {
     // def page: pages.Page = pages.Page.get(router.location)
@@ -21,7 +23,9 @@ object App {
 import App.*
 
 @JSExportTopLevel("RockTheJvmApp")
-class App extends TyrianApp[Msg, Model] {
+class App extends TyrianIOApp[Msg, Model] {
+
+  override def router: Location => Msg = Routing.none(NoOperation)
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) = {
     // val urlLocation = window.location.pathname
@@ -50,7 +54,8 @@ class App extends TyrianApp[Msg, Model] {
 
     // Model(router) -> cmd
     val (pageToNavigate, actionToTake) = msg match
-      case NavigateTo(page) => page.update(msg)
+      case msg: Page.Msg => Page.update(msg)
+      case NoOperation => model.page -> Cmd.None
 
     model.copy(page = pageToNavigate) -> actionToTake
   }
