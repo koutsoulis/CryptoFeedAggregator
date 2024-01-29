@@ -6,8 +6,8 @@ import tyrian.Html.*
 import com.rockthejvm.jobsboard.App.Msg
 import com.rockthejvm.jobsboard.App.Model
 
-object JobListPage extends Page {
+object StreamingExamplePage extends Page {
   override def view(model: Model): Html[Msg] =
-    div("Job List Page - TODO")
+    div(s"Streaming from server: ")
 
 }

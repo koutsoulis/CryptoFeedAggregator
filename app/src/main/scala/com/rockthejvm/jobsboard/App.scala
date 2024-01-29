@@ -6,16 +6,15 @@ import tyrian.*
 import tyrian.Html.*
 import cats.effect.IO
 // import com.rockthejvm.jobsboard.core.Router
-import com.rockthejvm.jobsboard.pages.Page
-import com.rockthejvm.jobsboard.pages.HomePage
 // import com.rockthejvm.jobsboard.pages.Page.NavigateTo
+import core.PageManager
 
 object App {
-  type Msg = Page.Msg | NoOperation.type
+  type Msg = NoOperation.type | PageManager.NavigateTo
 
   case object NoOperation
 
-  case class Model(page: Page) {
+  case class Model(pageManager: PageManager) {
     // def page: pages.Page = pages.Page.get(router.location)
   }
 }
@@ -32,7 +31,7 @@ class App extends TyrianIOApp[Msg, Model] {
     // val (router, routerCmd) = Router.startAt(urlLocation)
     // val pageUrl = Page.Url.of(urlLocation)
 
-    Model(HomePage) -> Cmd.None
+    Model(PageManager.apply) -> Cmd.None
   }
 
   override def subscriptions(model: Model): Sub[IO, Msg] = Sub.None
@@ -46,18 +45,16 @@ class App extends TyrianIOApp[Msg, Model] {
   override def view(model: Model): Html[Msg] =
     div(
       components.Header.view,
-      model.page.view
+      model.pageManager.view(model)
     )
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { msg =>
-    // val (router, cmd) = model.router.update(msg)
+    val (newModel, nextMsg) = msg match
+      case msg: PageManager.NavigateTo =>
+        model.copy(pageManager = model.pageManager.update(msg)) -> NoOperation
+      case NoOperation => model -> NoOperation
 
-    // Model(router) -> cmd
-    val (pageToNavigate, actionToTake) = msg match
-      case msg: Page.Msg => Page.update(msg)
-      case NoOperation => model.page -> Cmd.None
-
-    model.copy(page = pageToNavigate) -> actionToTake
+    newModel -> Cmd.None
   }
 
   // def doSomething(containerId: String) =

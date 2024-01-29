@@ -5,8 +5,10 @@ import tyrian.Html.*
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 // import com.rockthejvm.jobsboard.core.Router
-import com.rockthejvm.jobsboard.pages.Page
 import com.rockthejvm.jobsboard.pages
+import com.rockthejvm.jobsboard.pages.Page
+import com.rockthejvm.jobsboard.core.PageManager
+import com.rockthejvm.jobsboard.pages.HomePage
 
 object Header {
   def view =
@@ -15,7 +17,8 @@ object Header {
       div(`class` := "header-nav")(
         ul(`class` := "header-links")(
           renderNavlink("jobs", pages.JobListPage),
-          renderNavlink("home", pages.HomePage)
+          renderNavlink("home", pages.HomePage),
+          renderNavlink("streaming", pages.StreamingExamplePage)
         )
       )
     )
@@ -33,13 +36,13 @@ object Header {
       )
     )
 
-  private def renderNavlink(text: String, page: pages.HomePage.type | pages.JobListPage.type) =
+  private def renderNavlink(text: String, page: Page.SubtypesExhaustive) =
     li(`class` := "nav-item")(
       button(
         onEvent(
           "click",
           e => {
-            Page.NavigateTo(page)
+            PageManager.NavigateTo(page)
           }
         )
       )(text)
