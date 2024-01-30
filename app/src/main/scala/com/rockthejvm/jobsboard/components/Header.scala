@@ -4,7 +4,6 @@ import tyrian.*
 import tyrian.Html.*
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
-// import com.rockthejvm.jobsboard.core.Router
 import com.rockthejvm.jobsboard.pages
 import com.rockthejvm.jobsboard.pages.Page
 import com.rockthejvm.jobsboard.core.PageManager

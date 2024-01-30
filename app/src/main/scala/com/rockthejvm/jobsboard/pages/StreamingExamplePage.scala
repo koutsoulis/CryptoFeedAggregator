@@ -8,6 +8,6 @@ import com.rockthejvm.jobsboard.App.Model
 
 object StreamingExamplePage extends Page {
   override def view(model: Model): Html[Msg] =
-    div(s"Streaming from server: ")
+    div(s"Streaming from server: ${model.displayStatus}")
 
 }

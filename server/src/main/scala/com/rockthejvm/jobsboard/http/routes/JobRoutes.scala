@@ -24,6 +24,8 @@ import sttp.model.StatusCode
 import ch.qos.logback.core.status.Status
 import io.circe.Codec
 import sttp.tapir.server.ServerEndpoint
+import sttp.capabilities.fs2.Fs2Streams
+import java.nio.charset.StandardCharsets
 
 class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
 
@@ -55,12 +57,21 @@ class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
   case class Unknown(code: Int, msg: String) derives Codec.AsObject, tapir.Schema
   case object NoContent
 
-  val simpleRoute: ServerEndpoint[Any, F] = tapir
-    .endpoint
-    .get
-    .in("simple")
-    .out(statusCode(StatusCode(200)))
-    .serverLogicSuccess(_ => Async[F].pure(()))
+  val simpleRoute = {
+    val simpleEndpoint: PublicEndpoint[Unit, Unit, fs2.Stream[F, Byte], Fs2Streams[F]] = tapir
+      .endpoint
+      .get
+      .in("simple")
+      .out(statusCode(StatusCode(200)))
+      .out(streamTextBody(Fs2Streams[F])(CodecFormat.TextPlain(), Some(StandardCharsets.UTF_8)))
+
+    simpleEndpoint
+      .serverLogicSuccess { _ =>
+        val iterator = Iterator.iterate(0)(_ + 1).map(_.toByte)
+        val stream = fs2.Stream.fromIterator.apply[Byte](iterator, 128)
+        stream.pure[F]
+      }
+  }
 
   val createJobRoute2: ServerEndpoint[Any, F] = tapir
     .infallibleEndpoint
