@@ -17,6 +17,7 @@ import org.http4s.client.websocket.WSFrame.Binary
 import com.rockthejvm.Example
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
+import monocle.syntax.all.*
 
 object App {
   type Msg = NoOperation.type | PageManager.NavigateTo | UpdatedStatus | Model.SubscriptionDef | WSDF
@@ -27,9 +28,8 @@ object App {
 
   case class UpdatedStatus(value: String)
 
-  case class Model(pageManager: PageManager, displayStatus: String, subscriptionDefs: List[Model.SubscriptionDef]) {
-    // def page: pages.Page = pages.Page.get(router.location)
-  }
+  case class Model(pageManager: PageManager, displayStatus: String, subscriptionDefs: List[Model.SubscriptionDef])
+
   object Model {
     case class SubscriptionDef(name: String, stream: fs2.Stream[IO, Msg], cleanup: IO[Unit])
   }
@@ -100,23 +100,25 @@ class App extends TyrianIOApp[Msg, Model] {
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { msg =>
     val (newModel, nextMsg) = msg match
       case msg: PageManager.NavigateTo =>
-        model.copy(pageManager = model.pageManager.update(msg)) -> Cmd.None
+        model.focus(_.pageManager).modify(_.update(msg)) -> Cmd.None
 
       case NoOperation => model -> Cmd.None
 
-      case UpdatedStatus(value) => model.copy(displayStatus = value) -> Cmd.None
+      case UpdatedStatus(value) => model.focus(_.displayStatus).replace(value) -> Cmd.None
 
       case subDef: Model.SubscriptionDef =>
-        model.copy(subscriptionDefs = model.subscriptionDefs.prepended(subDef)) -> Cmd.None
+        model.focus(_.subscriptionDefs).modify(_.prepended(subDef)) -> Cmd.None
 
       case WSDF(wsDataFrame) =>
-        wsDataFrame match
+        wsDataFrame match {
           case Text(data, last) =>
-            model.copy(
-              displayStatus =
+            model
+              .focus(_.displayStatus).replace(
                 circe.parser.decode[Example.WrappedString](data).map(_.value).getOrElse(s"decoding $data failed")
-            ) -> Cmd.None
+              ) -> Cmd.None
+
           case _ => throw new Exception("impossible")
+        }
 
     newModel -> nextMsg
   }
