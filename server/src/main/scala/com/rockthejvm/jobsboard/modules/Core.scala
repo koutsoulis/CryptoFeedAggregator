@@ -25,7 +25,7 @@ object Core {
 
     postgresResource
       .map(LiveJobsDao.apply)
-      .map(HttpApi.apply).product(Resource.pure(WebSockServerEndpoints()))
+      .map(HttpServerEndpoints.apply).product(Resource.pure(WebSockServerEndpoints()))
       .flatMap(EmberServer.apply)
       .map(new Core(_))
   }

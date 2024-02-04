@@ -19,7 +19,7 @@ import sttp.tapir.EndpointInput.Auth
 import sttp.tapir.EndpointInput.AuthType.OAuth2
 import sttp.model.StatusCode
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
-import com.rockthejvm.jobsboard.modules.HttpApi.SecurityErr1
+import com.rockthejvm.jobsboard.modules.HttpServerEndpoints.SecurityErr1
 import io.circe
 import io.circe.generic.semiauto.*
 import sttp.tapir.EndpointIO.annotations.path
@@ -28,8 +28,8 @@ import sttp.client3.http4s.*
 import java.time.Instant
 import sttp.tapir.Schema
 
-class HttpApi[F[_]: Async] private (jobs: JobsDao[F]) {
-  import HttpApi.*
+class HttpServerEndpoints[F[_]: Async] private (jobs: JobsDao[F]) {
+  import HttpServerEndpoints.*
 
   val accessTokenUrl = "https://github.com/login/oauth/access_token"
   val authorizationUrl = "https://github.com/login/oauth/authorize"
@@ -114,8 +114,8 @@ class HttpApi[F[_]: Async] private (jobs: JobsDao[F]) {
 
 }
 
-object HttpApi {
-  def apply[F[_]: Async](jobs: JobsDao[F]): HttpApi[F] = new HttpApi[F](jobs)
+object HttpServerEndpoints {
+  def apply[F[_]: Async](jobs: JobsDao[F]): HttpServerEndpoints[F] = new HttpServerEndpoints[F](jobs)
 
   trait SecurityErr
   case class SecurityErr1(cause: String) extends SecurityErr derives circe.Codec.AsObject, tapir.Schema

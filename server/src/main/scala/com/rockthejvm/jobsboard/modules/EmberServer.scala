@@ -25,7 +25,7 @@ import sttp.capabilities.fs2.Fs2Streams
 object EmberServer {
 
   def apply[F[_]: Async: log4cats.LoggerFactory](
-      httpApi: HttpApi[F],
+      httpApi: HttpServerEndpoints[F],
       webSockServerEndpoints: WebSockServerEndpoints[F]
   ): Resource[F, Server] = {
     val swaggerEndpoints: List[sttp.tapir.server.ServerEndpoint[Fs2Streams[F], F]] =
