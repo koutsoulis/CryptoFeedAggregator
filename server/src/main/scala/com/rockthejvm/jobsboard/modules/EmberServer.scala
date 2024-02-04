@@ -46,22 +46,21 @@ object EmberServer {
         .withHost(conf.host)
         .withPort(conf.port)
         // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)
-        .withHttpApp(
-          middlewares(
-            Http4sServerInterpreter
-              .apply[F]()
-              .toRoutes(
-                swaggerEndpoints
-                  .appended(httpApi.loginRoute)
-                  .appended(httpApi.oAuthRedirectRoute(backend))
-                  .appended(httpApi.endpoints)
-              )
-          ).orNotFound
-        ).withHttpWebSocketApp { wb =>
-          Http4sServerInterpreter
+        .withHttpWebSocketApp { wb =>
+          val webSocketInterpretedEndpoints = Http4sServerInterpreter
             .apply[F]()
             .toWebSocketRoutes(webSockServerEndpoints.simpleServerEndpointWS)(wb)
-            .orNotFound
+
+          val httpInterpretedEndpoints = Http4sServerInterpreter
+            .apply[F]()
+            .toRoutes(
+              swaggerEndpoints
+                .appended(httpApi.loginRoute)
+                .appended(httpApi.oAuthRedirectRoute(backend))
+                .appended(httpApi.endpoints)
+            )
+
+          middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
         }
         .build
     }
