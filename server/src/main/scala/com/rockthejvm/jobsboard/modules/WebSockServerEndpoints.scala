@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.http.routes
+package com.rockthejvm.jobsboard.modules
 
 // import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*

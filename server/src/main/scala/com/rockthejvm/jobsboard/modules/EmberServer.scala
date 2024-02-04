@@ -21,7 +21,6 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.client3.http4s.Http4sBackend
 import org.http4s.server.middleware.CORS
 import sttp.capabilities.fs2.Fs2Streams
-import com.rockthejvm.jobsboard.http.routes.WebSockServerEndpoints
 
 object EmberServer {
 

@@ -7,7 +7,6 @@ import cats.effect.*
 import doobie.hikari.HikariTransactor
 import org.http4s.server.Server
 import org.typelevel.log4cats
-import com.rockthejvm.jobsboard.http.routes.WebSockServerEndpoints
 
 class Core private (_emberServer: Server)
 
