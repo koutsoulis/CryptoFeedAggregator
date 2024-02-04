@@ -12,7 +12,7 @@ import sttp.tapir
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 import java.util.UUID
-import com.rockthejvm.jobsboard.http.routes.JobRoutes
+import com.rockthejvm.jobsboard.http.routes.JobServerEndpoints
 import scala.collection.immutable.ListMap
 import sttp.tapir.EndpointInput
 import sttp.tapir.EndpointInput.Auth
@@ -87,7 +87,7 @@ class HttpApi[F[_]: Async] private (jobs: JobsDao[F]) {
       )
 
     val jobRoutes =
-      routes.JobRoutes[F](jobs).simpleRoute
+      routes.JobServerEndpoints[F](jobs).simpleRoute
 
     val res = jobRoutes
     // .prependSecurity(

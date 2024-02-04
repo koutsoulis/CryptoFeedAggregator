@@ -21,11 +21,14 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.client3.http4s.Http4sBackend
 import org.http4s.server.middleware.CORS
 import sttp.capabilities.fs2.Fs2Streams
-import com.rockthejvm.jobsboard.http.routes.WSRoutes
+import com.rockthejvm.jobsboard.http.routes.WebSockServerEndpoints
 
 object EmberServer {
 
-  def apply[F[_]: Async: log4cats.LoggerFactory](httpApi: HttpApi[F]): Resource[F, Server] = {
+  def apply[F[_]: Async: log4cats.LoggerFactory](
+      httpApi: HttpApi[F],
+      webSockServerEndpoints: WebSockServerEndpoints[F]
+  ): Resource[F, Server] = {
     val swaggerEndpoints: List[sttp.tapir.server.ServerEndpoint[Fs2Streams[F], F]] =
       SwaggerInterpreter()
         .fromServerEndpoints[F](
@@ -57,7 +60,7 @@ object EmberServer {
         ).withHttpWebSocketApp { wb =>
           Http4sServerInterpreter
             .apply[F]()
-            .toWebSocketRoutes(WSRoutes().simpleRouteWS)(wb)
+            .toWebSocketRoutes(webSockServerEndpoints.simpleServerEndpointWS)(wb)
             .orNotFound
         }
         .build

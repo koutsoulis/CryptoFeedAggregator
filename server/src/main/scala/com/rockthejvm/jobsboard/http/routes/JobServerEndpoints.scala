@@ -27,7 +27,7 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.capabilities.fs2.Fs2Streams
 import java.nio.charset.StandardCharsets
 
-class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
+class JobServerEndpoints[F[_]: Async] private (jobs: JobsDao[F]) {
 
   // private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of {
   //   case PUT -> Root / "create" =>
@@ -135,6 +135,6 @@ class JobRoutes[F[_]: Async] private (jobs: JobsDao[F]) {
 
 }
 
-object JobRoutes {
-  def apply[F[_]: Async](jobs: JobsDao[F]): JobRoutes[F] = new JobRoutes[F](jobs)
+object JobServerEndpoints {
+  def apply[F[_]: Async](jobs: JobsDao[F]): JobServerEndpoints[F] = new JobServerEndpoints[F](jobs)
 }

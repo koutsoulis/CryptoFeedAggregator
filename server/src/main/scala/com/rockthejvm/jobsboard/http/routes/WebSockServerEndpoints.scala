@@ -29,11 +29,16 @@ import java.nio.charset.StandardCharsets
 import fs2.Chunk
 import com.rockthejvm.Example
 import concurrent.duration.DurationInt
+import com.rockthejvm.Example.WrappedString
+import sttp.capabilities.WebSockets
 // import sttp.tapir.CodecFormat.Json.
 
-class WSRoutes[F[_]: Async] {
+class WebSockServerEndpoints[F[_]: Async] {
 
-  val simpleRouteWS = {
+  val simpleServerEndpointWS: ServerEndpoint[Fs2Streams[F] & WebSockets, F] {
+    type SECURITY_INPUT = Unit; type PRINCIPAL = Unit; type INPUT = Unit; type ERROR_OUTPUT = Unit;
+    type OUTPUT = fs2.Stream[F, String] => fs2.Stream[F, WrappedString]
+  } = {
     val simpleEndpoint: PublicEndpoint[
       Unit,
       Unit,
@@ -58,6 +63,6 @@ class WSRoutes[F[_]: Async] {
 
 }
 
-object WSRoutes {
-  def apply[F[_]: Async](): WSRoutes[F] = new WSRoutes[F]()
+object WebSockServerEndpoints {
+  def apply[F[_]: Async](): WebSockServerEndpoints[F] = new WebSockServerEndpoints[F]()
 }
