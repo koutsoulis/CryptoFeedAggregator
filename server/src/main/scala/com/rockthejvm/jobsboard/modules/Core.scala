@@ -23,9 +23,14 @@ object Core {
       )
     } yield xa
 
-    postgresResource
-      .map(LiveJobsDao.apply)
-      .map(HttpServerEndpoints.apply).product(Resource.pure(WebSockServerEndpoints()))
+    // postgresResource
+    //   .map(LiveJobsDao.apply)
+    //   .map(HttpServerEndpoints.apply).product(Resource.pure(WebSockServerEndpoints()))
+    //   .flatMap(EmberServer.apply)
+    //   .map(new Core(_))
+
+    Resource
+      .pure(WebSockServerEndpoints())
       .flatMap(EmberServer.apply)
       .map(new Core(_))
   }

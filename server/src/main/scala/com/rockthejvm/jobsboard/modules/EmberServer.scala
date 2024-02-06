@@ -25,16 +25,16 @@ import sttp.capabilities.fs2.Fs2Streams
 object EmberServer {
 
   def apply[F[_]: Async: log4cats.LoggerFactory](
-      httpApi: HttpServerEndpoints[F],
+      // httpApi: HttpServerEndpoints[F],
       webSockServerEndpoints: WebSockServerEndpoints[F]
   ): Resource[F, Server] = {
-    val swaggerEndpoints: List[sttp.tapir.server.ServerEndpoint[Fs2Streams[F], F]] =
-      SwaggerInterpreter()
-        .fromServerEndpoints[F](
-          endpoints = List[ServerEndpoint[Fs2Streams[F], F]](httpApi.endpoints),
-          title = "title required by swagger",
-          version = "version string"
-        )
+    // val swaggerEndpoints: List[sttp.tapir.server.ServerEndpoint[Fs2Streams[F], F]] =
+    //   SwaggerInterpreter()
+    //     .fromServerEndpoints[F](
+    //       endpoints = List[ServerEndpoint[Fs2Streams[F], F]](httpApi.endpoints),
+    //       title = "title required by swagger",
+    //       version = "version string"
+    //     )
 
     (
       Http4sBackend.usingDefaultEmberClientBuilder[F](),
@@ -50,16 +50,15 @@ object EmberServer {
             .apply[F]()
             .toWebSocketRoutes(webSockServerEndpoints.simpleServerEndpointWS)(wb)
 
-          val httpInterpretedEndpoints = Http4sServerInterpreter
-            .apply[F]()
-            .toRoutes(
-              swaggerEndpoints
-                .appended(httpApi.loginRoute)
-                .appended(httpApi.oAuthRedirectRoute(backend))
-                .appended(httpApi.endpoints)
-            )
+          // val httpInterpretedEndpoints = Http4sServerInterpreter
+          //   .apply[F]()
+          //   .toRoutes(
+          //     swaggerEndpoints
+          //       .appended(httpApi.endpoints)
+          //   )
 
-          middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
+          // middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
+          middlewares(webSocketInterpretedEndpoints).orNotFound
         }
         .build
     }
