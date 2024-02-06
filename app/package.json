@@ -2,7 +2,7 @@
     "scripts": {
         "start": "parcel index-prod.html --no-cache --dist-dir dist --log-level info",
         "dev-start": "parcel index-dev.html --no-cache --dist-dir dist --log-level info",
-        "build": "cd .. && sbt fullLinkJS && cd app && parcel build index.html --dist-dir dist --log-level info",
+        "build": "parcel build index.html --dist-dir dist --log-level info",
         "dev-build": "cd .. && sbt fastLinkJS && cd app && parcel build index.html --dist-dir dist --log-level info"
     },
     "devDependencies": {
