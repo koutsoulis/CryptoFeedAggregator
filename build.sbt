@@ -1,4 +1,4 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / version := "0.1.1-SNAPSHOT"
 // ThisBuild / name := "typelevel-project"
 
 lazy val rockthejvm = "com.rockthejvm"
@@ -101,6 +101,7 @@ lazy val embeddedPostgresVersion = "2.0.6"
 import org.typelevel.scalacoptions.ScalacOptions
 
 lazy val server = (project in file("server"))
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     name := "typelevel-project",
     scalaVersion := scala3Version,
@@ -148,7 +149,20 @@ lazy val server = (project in file("server"))
       ScalacOptions.warnUnusedLocals,
       ScalacOptions.warnUnusedExplicits,
       ScalacOptions.fatalWarnings
-    )
+    ),
+    dockerExposedPorts ++= Seq(4041),
+    dockerBaseImage := "sbtscala/scala-sbt:eclipse-temurin-focal-11.0.22_7_1.9.8_3.3.1",
+    Docker / daemonUserUid := None,
+    Docker / daemonUser := "daemon",
+    Docker / dockerRepository := Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),
+    Docker / dockerAlias := com
+      .typesafe.sbt.packager.docker.DockerAlias(
+        registryHost = Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),
+        username = None,
+        name = "typelevel-project-backend",
+        tag = Some("anotherversion")
+      ),
+    Docker / dockerUpdateLatest := true
   ).dependsOn(common.jvm)
 
 enablePlugins(RevolverPlugin)

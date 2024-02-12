@@ -21,6 +21,9 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.client3.http4s.Http4sBackend
 import org.http4s.server.middleware.CORS
 import sttp.capabilities.fs2.Fs2Streams
+import sttp.tapir
+import sttp.tapir.*
+import sttp.tapir.json.circe.*
 
 object EmberServer {
 
@@ -50,15 +53,22 @@ object EmberServer {
             .apply[F]()
             .toWebSocketRoutes(webSockServerEndpoints.simpleServerEndpointWS)(wb)
 
-          // val httpInterpretedEndpoints = Http4sServerInterpreter
-          //   .apply[F]()
-          //   .toRoutes(
-          //     swaggerEndpoints
-          //       .appended(httpApi.endpoints)
-          //   )
+          val healthENdpoint =
+            ServerEndpoint.public[Unit, Nothing, Unit, Any, F](
+              endpoint = tapir.infallibleEndpoint.in(""),
+              logic = { me => _unit =>
+                me.unit(().asRight)
+              }
+            )
 
-          // middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
-          middlewares(webSocketInterpretedEndpoints).orNotFound
+          val httpInterpretedEndpoints = Http4sServerInterpreter
+            .apply[F]()
+            .toRoutes(
+              List(healthENdpoint)
+            )
+
+          middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
+          // middlewares(webSocketInterpretedEndpoints).orNotFound
         }
         .build
     }

@@ -51,7 +51,8 @@ class App extends TyrianIOApp[Msg, Model] {
       http4s
         .dom.WebSocketClient[IO].connectHighLevel(
           websocket.WSRequest(
-            uri = http4s.Uri.fromString("ws://localhost:4041/simpleWS").getOrElse(None.get)
+            uri =
+              http4s.Uri.fromString("wss://typelevel-project-backend.kotopoulion.xyz:4041/simpleWS").getOrElse(None.get)
           )
         ).allocated.map { case (conn, cleanup) => conn.receiveStream -> cleanup }
         .map { case (conn, cleanup) =>
