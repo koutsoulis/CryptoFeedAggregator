@@ -13,6 +13,7 @@ project/project/
 .metals/
 .bloop/
 project/.bloop/
+project/metals.sbt
 
 # BSP (Build Server Protocol)
 .bsp/

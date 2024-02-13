@@ -140,7 +140,8 @@ lazy val server = (project in file("server"))
       "io.monix" %% "newtypes-circe-v0-14" % monixNewtypesVersion,
       "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
-      "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion
+      "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
+      "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0"
     ),
     Compile / tpolecatExcludeOptions ++= Set(
       ScalacOptions.warnUnusedImports,
