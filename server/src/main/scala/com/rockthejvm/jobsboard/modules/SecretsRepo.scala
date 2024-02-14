@@ -30,7 +30,7 @@ object SecretsRepo {
     val getSecretValueRequest = GetSecretValueRequest
       .builder()
       .secretId(secretName)
-      .build();
+      .build()
 
     Async[F]
       .fromCompletableFuture(

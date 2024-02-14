@@ -9,6 +9,7 @@ lazy val scala3Version = "3.3.1"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 lazy val http4sVersion = "0.23.25"
+lazy val http4sJDKClientVersion = "0.9.1"
 lazy val circeVersion = "0.14.0"
 lazy val tapirVersion = "1.9.6"
 lazy val monocleVersion = "3.2.0"
@@ -97,6 +98,7 @@ lazy val apacheCommonsVersion = "1.8.0"
 lazy val monixNewtypesVersion = "0.2.3"
 lazy val sttpClient3Version = "3.9.2"
 lazy val embeddedPostgresVersion = "2.0.6"
+lazy val catsRetryVersion = "3.1.0"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -112,6 +114,7 @@ lazy val server = (project in file("server"))
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
+      "org.http4s" %% "http4s-jdk-http-client" % http4sJDKClientVersion,
       "org.http4s" %% "http4s-circe" % http4sVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
@@ -141,7 +144,8 @@ lazy val server = (project in file("server"))
       "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
       "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
-      "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0"
+      "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
+      "com.github.cb372" %% "cats-retry" % catsRetryVersion
     ),
     Compile / tpolecatExcludeOptions ++= Set(
       ScalacOptions.warnUnusedImports,
