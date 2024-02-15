@@ -16,32 +16,34 @@ import cats.effect.kernel.DeferredSource
 import concurrent.duration.DurationInt
 import weaver.SimpleIOSuite
 
-
-object CryptoCompareSpec extends SimpleIOSuite
+object CryptoCompareSpec
+    extends SimpleIOSuite
 // extends weaver.IOSuite with doobie.weaver.IOChecker
-{
+    {
   // override type Res = doobie.Transactor[IO]
 
   // override def sharedResource =
   //   new DoobieTestHelpers(EmbeddedPg.transactorResource).transactorRsIncludingSetup
 
-  val wsFrames = fs2.Stream(
-    WSFrame.Text("asd1"),
-    WSFrame.Text("asd2"),
-    WSFrame.Text("asd3"),
-    WSFrame.Text("asd4"),
-    WSFrame.Text("asd5")
-  ).covary[IO]
-  .metered(1.seconds)
-  .evalTap(IO.print)
+  val unercoverableError = """
+    {"TYPE":"401", "MESSAGE":"UNAUTHORIZED","PARAMETER": "format","INFO":"We only support JSON format with a valid api_key."}
+  """
 
-  def client = new WSClientHighLevel[IO]{
+  val forceDisconnectMessage = """
+    {"TYPE":"500", "MESSAGE":"FORCE_DISCONNECT"}
+  """
+
+  val cryptoDataMessage = """
+    {"TYPE":"5","MARKET":"CCCAGG","FROMSYMBOL":"BTC","TOSYMBOL":"USD","FLAGS":2,"MEDIAN":49735.6637659428,"LASTTRADEID":"217093517","PRICE":49735.6637659428,"LASTUPDATE":1707832427,"LASTVOLUME":0.02800179,"LASTVOLUMETO":1392.2750404647,"VOLUMEHOUR":2593.3459684,"VOLUMEHOURTO":128681184.345007,"VOLUMEDAY":15494.02153829,"VOLUMEDAYTO":773812157.387051,"VOLUME24HOUR":49236.99141083,"VOLUME24HOURTO":2449291847.091117,"CURRENTSUPPLYMKTCAP":976108705309.5936,"CIRCULATINGSUPPLYMKTCAP":976108705309.5936,"MAXSUPPLYMKTCAP":1044448937935.905}
+  """
+
+  def client(mockStream: fs2.Stream[IO, WSFrame.Text]) = new WSClientHighLevel[IO] {
 
     override def connectHighLevel(request: WSRequest): Resource[IO, WSConnectionHighLevel[IO]] =
-      Resource.pure{
-        new WSConnectionHighLevel{
+      Resource.pure {
+        new WSConnectionHighLevel {
 
-          override def receiveStream: fs2.Stream[IO, WSDataFrame] = wsFrames
+          override def receiveStream: fs2.Stream[IO, WSDataFrame] = mockStream
 
           override def closeFrame: DeferredSource[cats.effect.IO, Close] = ???
 
@@ -56,10 +58,22 @@ object CryptoCompareSpec extends SimpleIOSuite
         }
       }
 
-
   }
 
-  test("should print forever"){
-    CryptoCompare.apply(client).priceBTC.compile.drain.foreverM
+  test("should throw eventually") {
+    val mockStreamConcludingWithUnrecoverable = fs2
+      .Stream(
+        WSFrame.Text(cryptoDataMessage),
+        WSFrame.Text(cryptoDataMessage),
+        WSFrame.Text(cryptoDataMessage),
+        WSFrame.Text(cryptoDataMessage),
+        WSFrame.Text(unercoverableError)
+      ).covary[IO]
+      .metered(1.seconds)
+      .evalTap(IO.print)
+
+    CryptoCompare
+      .apply(client(mockStreamConcludingWithUnrecoverable)).priceBTC.compile.drain.attempt
+      .map(eitherResult => expect(eitherResult.isLeft))
   }
 }
