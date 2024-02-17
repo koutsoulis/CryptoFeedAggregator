@@ -8,6 +8,7 @@ lazy val scala3Version = "3.3.1"
 // Common - contains domain model
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+lazy val catsEffectVersion = "3.5.3"
 lazy val http4sVersion = "0.23.25"
 lazy val http4sJDKClientVersion = "0.9.1"
 lazy val circeVersion = "0.14.0"
@@ -20,6 +21,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
     scalaVersion := scala3Version,
     organization := rockthejvm,
     libraryDependencies ++= Seq(
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
@@ -79,7 +81,6 @@ lazy val app = (project in file("app"))
     )
   ).dependsOn(common.js)
 
-lazy val catsEffectVersion = "3.3.14"
 lazy val munitCEVersion = "2.0.0-M4"
 lazy val doobieVersion = "1.0.0-RC5"
 lazy val chimneyVersion = "0.8.3"
@@ -99,6 +100,7 @@ lazy val monixNewtypesVersion = "0.2.3"
 lazy val sttpClient3Version = "3.9.2"
 lazy val embeddedPostgresVersion = "2.0.6"
 lazy val catsRetryVersion = "3.1.0"
+lazy val kittensVersion = "3.2.0"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -110,7 +112,7 @@ lazy val server = (project in file("server"))
     organization := rockthejvm,
     scalacOptions ++= Seq("-no-indent"),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.typelevel" %% "kittens" % kittensVersion,
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
@@ -145,7 +147,8 @@ lazy val server = (project in file("server"))
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
       "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
-      "com.github.cb372" %% "cats-retry" % catsRetryVersion
+      "com.github.cb372" %% "cats-retry" % catsRetryVersion,
+      "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
     ),
     Compile / tpolecatExcludeOptions ++= Set(
       ScalacOptions.warnUnusedImports,
