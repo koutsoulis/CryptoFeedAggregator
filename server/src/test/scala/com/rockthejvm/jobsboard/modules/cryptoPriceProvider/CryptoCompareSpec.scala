@@ -43,7 +43,12 @@ object CryptoCompareSpec
 
   val cryptoDataMessage = cryptoDataMessagePart1 ++ cryptoDataMessagePart2
 
+  val cryptoDataMessage2 =
+    """{"TYPE":"5","MARKET":"CCCAGG","FROMSYMBOL":"BTC","TOSYMBOL":"USD","FLAGS":2,"MEDIAN":49735.6637659428,"LASTTRADEID":"217093517","PRICE":59735.6637659428,"LASTUPDATE":1707832427,"LASTVOLUME":0.02800179,"LASTVOLUMETO":1392.2750404647,"VOLUMEHOUR":2593.3459684,"VOLUMEHOURTO":128681184.345007,"VOLUMEDAY":15494.02153829,"VOLUMEDAYTO":773812157.387051,"VOLUME24HOUR":49236.99141083,"VOLUME24HOURTO":2449291847.091117,"CURRENTSUPPLYMKTCAP":976108705309.5936,"CIRCULATINGSUPPLYMKTCAP":976108705309.5936,"MAXSUPPLYMKTCAP":1044448937935.905}"""
+
   val cryptoDataMessageDeserialized = CryptoData(TYPE = 5, FROMSYMBOL = "BTC", PRICE = 49735.6637659428)
+
+  val cryptoDataMessage2Deserialized = CryptoData(TYPE = 5, FROMSYMBOL = "BTC", PRICE = 59735.6637659428)
 
   def mockClient(mockStream: fs2.Stream[IO, WSFrame.Text]) = new WSClientHighLevel[IO] {
 
@@ -59,7 +64,7 @@ object CryptoCompareSpec
 
           override def send(wsf: WSDataFrame): IO[Unit] = ???
 
-          override def sendMany[G[_$8]: Foldable, A <: WSDataFrame](wsfs: G[A]): IO[Unit] = ???
+          override def sendMany[G[_]: Foldable, A <: WSDataFrame](wsfs: G[A]): IO[Unit] = ???
 
           override def subprotocol: Option[String] = ???
 
@@ -119,6 +124,29 @@ object CryptoCompareSpec
     )
   }
 
+  def mockClientIteratesThroughStreams(mockStreamsIterator: Iterator[fs2.Stream[IO, WSFrame.Text]]) = new WSClientHighLevel[IO] {
+    override def connectHighLevel(request: WSRequest): Resource[IO, WSConnectionHighLevel[IO]] = Resource
+      .eval(IO(mockStreamsIterator.next()))
+      .map { recStream =>
+        new WSConnectionHighLevel {
+
+          override def receiveStream: fs2.Stream[IO, WSDataFrame] = recStream
+
+          override def closeFrame: DeferredSource[cats.effect.IO, Close] = ???
+
+          override def receive: IO[Option[WSDataFrame]] = ???
+
+          override def send(wsf: WSDataFrame): IO[Unit] = ???
+
+          override def sendMany[G[_$8]: Foldable, A <: WSDataFrame](wsfs: G[A]): IO[Unit] = ???
+
+          override def subprotocol: Option[String] = ???
+
+        }
+      }
+
+  }
+
   test(s"wait at least ${CryptoCompare.reconnectWait} before attempting to connect, both the first time and on subsequent reattempts") {
     val clientWhichEmitsOneMessageAndDisconnects = {
       val mockStreamOfOneMessage = fs2
@@ -126,7 +154,7 @@ object CryptoCompareSpec
           WSFrame.Text(cryptoDataMessage)
         ).covary[IO]
 
-      mockClient(mockStreamOfOneMessage)
+      mockClientIteratesThroughStreams(List(mockStreamOfOneMessage, mockStreamOfOneMessage).iterator)
     }
 
     TestControl
@@ -134,15 +162,15 @@ object CryptoCompareSpec
         CryptoCompare(clientWhichEmitsOneMessageAndDisconnects).priceBTC.take(2).compile.toList
       ).flatMap { control =>
         for {
-          _ <- control.tick // needed to reach the first sleep before the first attempt to connect
+          _ <- control.tick // needed to reach the sleep before the first attempt to connect
 
           sleepTimeBeforeFirstConnectionExpectation <- control
-            .nextInterval.map(timeTillConnect => expect(timeTillConnect >= CryptoCompare.reconnectWait))
+            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.reconnectWait))
           _ <- control.advanceAndTick(CryptoCompare.reconnectWait)
 
           sleepTimeBeforeSecondConnectionExpectation <- control
-            .nextInterval.map(timeTillConnect => expect(timeTillConnect >= CryptoCompare.reconnectWait))
-          _ <- control.tickAll
+            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.reconnectWait))
+          _ <- control.advanceAndTick(CryptoCompare.reconnectWait)
 
           resultExpectation <- control
             .results
@@ -150,6 +178,50 @@ object CryptoCompareSpec
               expect(maybeRes.contains(Outcome.Succeeded(List(cryptoDataMessageDeserialized, cryptoDataMessageDeserialized))))
             }
         } yield sleepTimeBeforeFirstConnectionExpectation && sleepTimeBeforeSecondConnectionExpectation && resultExpectation
+      }
+  }
+
+  test(s"successfuly emit a well formed message preceding an unrecoverable error message from the server") {
+    val clientWhichEmitsOneMessageAndDisconnects = {
+      val mockStreamOfOneMessage = fs2
+        .Stream(
+          WSFrame.Text(cryptoDataMessage),
+          WSFrame.Text(unercoverableError)
+        ).covary[IO]
+
+      mockClient(mockStreamOfOneMessage)
+    }
+
+    TestControl
+      .executeEmbed(
+        CryptoCompare(clientWhichEmitsOneMessageAndDisconnects)
+          .priceBTC.take(1).compile.toList
+          .map(messages => expect(messages.size == 1) && expect(messages.contains(cryptoDataMessageDeserialized)))
+      )
+  }
+
+  test(s"ignores partly emitted message when connection drops before its conclusion") {
+    val clientWhichEmitsOneMessageAndDisconnects = {
+      val mockStreamOfOneAndAHalfMessage = fs2
+        .Stream(
+          WSFrame.Text(cryptoDataMessage),
+          WSFrame.Text(cryptoDataMessagePart1, last = false)
+        ).covary[IO]
+
+      val mockStreamOfADifferentMessage = fs2
+        .Stream(
+          WSFrame.Text(cryptoDataMessage2)
+        ).covary[IO]
+
+      mockClientIteratesThroughStreams(List(mockStreamOfOneAndAHalfMessage, mockStreamOfADifferentMessage).iterator)
+    }
+
+    TestControl
+      .executeEmbed {
+        CryptoCompare(clientWhichEmitsOneMessageAndDisconnects)
+          .priceBTC.take(2).compile.toList.map { messages =>
+            expect(messages == List(cryptoDataMessageDeserialized, cryptoDataMessage2Deserialized))
+          }
       }
   }
 }

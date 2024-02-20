@@ -22,6 +22,7 @@ import cryptoCompare.dto.*
 import com.rockthejvm.jobsboard.modules.cryptoPriceProvider.cryptoCompare.dto.Message.CryptoData
 import com.rockthejvm.jobsboard.modules.cryptoPriceProvider.cryptoCompare.dto.Message.Ignore
 import com.rockthejvm.jobsboard.modules.cryptoPriceProvider.cryptoCompare.dto.Message.UnrecoverableError
+import fs2.Chunk
 
 trait CryptoCompare[F[_]: Async] {
   def priceBTC: fs2.Stream[F, Message.CryptoData]
@@ -36,56 +37,54 @@ object CryptoCompare {
 
   // TODO: tighter bounds than Async
   def apply[F[_]: Async](client: http4s.client.websocket.WSClientHighLevel[F]): CryptoCompare[F] = {
-    type WSStream = fs2.Stream[F, WSDataFrame]
-
-    def reconnectingStream: fs2.Stream[F, org.http4s.client.websocket.WSDataFrame] = {
-
-      val streamAcquireRelease: F[(WSStream, F[Unit])] =
-        client
-          .connectHighLevel(
-            WSRequest(
-              uri = uri""
-            )).map(_.receiveStream).allocated
-
-      val streamAcquireReleaseWithRetry = retry.retryingOnAllErrors(
-        policy = retry.RetryPolicies.exponentialBackoff(reconnectWait),
-        onError = (_: Throwable, _) => Async[F].unit
-      )(streamAcquireRelease)
-
-      val resourceWrappingStream =
-        Resource(streamAcquireReleaseWithRetry)
-
-      (fs2.Stream.sleep(reconnectWait) *> fs2.Stream.resource(resourceWrappingStream).flatten) ++
-        reconnectingStream
-    }
 
     new CryptoCompare[F] {
       override def priceBTC: fs2.Stream[F, Message.CryptoData] = {
 
-        val textFrames: fs2.Stream[F, Text] = reconnectingStream
-          .evalMapChunk {
+        val streamAcquireRelease: F[(fs2.Stream[F, WSDataFrame], F[Unit])] =
+          client
+            .connectHighLevel(
+              WSRequest(
+                uri = uri""
+              )).map(_.receiveStream).allocated
+
+        val streamAcquireReleaseWithRetry = retry.retryingOnAllErrors(
+          policy = retry.RetryPolicies.exponentialBackoff(reconnectWait * 2),
+          onError = (_: Throwable, _) => Async[F].unit
+        )(streamAcquireRelease)
+
+        val resourceWrappingStream =
+          Resource(streamAcquireReleaseWithRetry)
+
+        val textFrames: fs2.Stream[F, Text] = fs2
+          .Stream.resource(resourceWrappingStream).flatten
+          .evalMap {
             case textFrame: Text => Async[F].pure(textFrame)
             case Binary(data, last) => Async[F].raiseError(new Exception("didnt expect binary WSFrame"))
           }
 
-        val serializedMessages = {
-          def mergedFrames(frames: fs2.Stream[F, Text]): fs2.Stream[F, String] =
-            frames.takeThrough(frame => !frame.last).map(_.data).foldMonoid ++
-              mergedFrames(frames.dropThrough(frame => !frame.last))
+        val serializedMessages = textFrames
+          .chunkLimit(1).map(_.toVector).repartition { framesAcc =>
+            if (framesAcc.lastOption.exists(_.last)) {
+              // current websocket frame is marked last; emit accumulated frames as a group
+              Chunk(framesAcc, Vector.empty)
+            } else {
+              Chunk(framesAcc)
+            }
+          }.dropLast // Stream#repartition emits a leftover accumulator as the last element; it's either empty or contains an unterminated message; drop it
+          .map(_.map(_.data)) // project to text payload of websocket data frames
+          .map(_.mkString)
 
-          mergedFrames(textFrames)
-        }
-
-        val messagesWithoutErrors = serializedMessages
+        val messages: fs2.Stream[F, CryptoData] = serializedMessages
           .evalMap { serializedMessage =>
             circe.parser.decode[Message](serializedMessage).pure[F].rethrow
-          }.evalMap[F, CryptoData | Ignore.type] {
-            case data: CryptoData => Async[F].pure(data)
-            case Ignore => Async[F].pure(Ignore)
+          }.evalMapFilter {
+            case data: CryptoData => Async[F].pure(Some(data))
+            case Ignore => Async[F].pure(None)
             case UnrecoverableError(contents) => Async[F].raiseError(new Exception(contents.show))
           }
 
-        messagesWithoutErrors.collect { case data: CryptoData => data }
+        messages.delayBy(reconnectWait).repeat
       }
     }
 
