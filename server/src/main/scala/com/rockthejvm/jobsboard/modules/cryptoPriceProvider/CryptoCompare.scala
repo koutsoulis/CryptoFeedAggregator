@@ -24,6 +24,8 @@ import com.rockthejvm.jobsboard.modules.cryptoPriceProvider.cryptoCompare.dto.Me
 import com.rockthejvm.jobsboard.modules.cryptoPriceProvider.cryptoCompare.dto.Message.UnrecoverableError
 import fs2.Chunk
 
+import retry.RetryPolicies
+
 trait CryptoCompare[F[_]: Async] {
   def priceBTC: fs2.Stream[F, Message.CryptoData]
 }
@@ -33,7 +35,9 @@ trait CryptoCompare[F[_]: Async] {
 
 object CryptoCompare {
 
-  val reconnectWait = 5.seconds
+  val baseReconnectWait = 5.seconds
+
+  val maxReconnectWait = 30.minutes // arbitrary
 
   // TODO: tighter bounds than Async
   def apply[F[_]: Async](client: http4s.client.websocket.WSClientHighLevel[F]): CryptoCompare[F] = {
@@ -49,7 +53,7 @@ object CryptoCompare {
               )).map(_.receiveStream).allocated
 
         val streamAcquireReleaseWithRetry = retry.retryingOnAllErrors(
-          policy = retry.RetryPolicies.exponentialBackoff(reconnectWait * 2),
+          policy = RetryPolicies.capDelay(maxReconnectWait, RetryPolicies.exponentialBackoff(baseReconnectWait * 2)),
           onError = (_: Throwable, _) => Async[F].unit
         )(streamAcquireRelease)
 
@@ -84,7 +88,7 @@ object CryptoCompare {
             case UnrecoverableError(contents) => Async[F].raiseError(new Exception(contents.show))
           }
 
-        messages.delayBy(reconnectWait).repeat
+        messages.delayBy(baseReconnectWait).repeat
       }
     }
 

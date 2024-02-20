@@ -147,7 +147,7 @@ object CryptoCompareSpec
 
   }
 
-  test(s"wait at least ${CryptoCompare.reconnectWait} before attempting to connect, both the first time and on subsequent reattempts") {
+  test(s"wait at least ${CryptoCompare.baseReconnectWait} before attempting to connect, both the first time and on subsequent reattempts") {
     val clientWhichEmitsOneMessageAndDisconnects = {
       val mockStreamOfOneMessage = fs2
         .Stream(
@@ -165,12 +165,12 @@ object CryptoCompareSpec
           _ <- control.tick // needed to reach the sleep before the first attempt to connect
 
           sleepTimeBeforeFirstConnectionExpectation <- control
-            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.reconnectWait))
-          _ <- control.advanceAndTick(CryptoCompare.reconnectWait)
+            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.baseReconnectWait))
+          _ <- control.advanceAndTick(CryptoCompare.baseReconnectWait)
 
           sleepTimeBeforeSecondConnectionExpectation <- control
-            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.reconnectWait))
-          _ <- control.advanceAndTick(CryptoCompare.reconnectWait)
+            .nextInterval.map(timeTillConnect => expect(timeTillConnect == CryptoCompare.baseReconnectWait))
+          _ <- control.advanceAndTick(CryptoCompare.baseReconnectWait)
 
           resultExpectation <- control
             .results
