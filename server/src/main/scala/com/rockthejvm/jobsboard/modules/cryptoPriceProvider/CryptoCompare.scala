@@ -63,19 +63,19 @@ object CryptoCompare {
             case Binary(data, last) => Async[F].raiseError(new Exception("didnt expect binary WSFrame"))
           }
 
-        val serializedMessages = textFrames
-          .chunkLimit(1).map(_.toVector).repartition { framesAcc =>
-            if (framesAcc.lastOption.exists(_.last)) {
-              // current websocket frame is marked last; emit accumulated frames as a group
-              Chunk(framesAcc, Vector.empty)
+        val jsonMessages: fs2.Stream[F, String] = {
+          val concatRelatedFrames: fs2.Scan[Vector[String], Text, String] = fs2.Scan.stateful(Vector.empty) { case (acc, frame) =>
+            if (frame.last) {
+              Vector.empty -> Chunk.singleton(acc.appended(frame.data).mkString)
             } else {
-              Chunk(framesAcc)
+              acc.appended(frame.data) -> Chunk.empty
             }
-          }.dropLast // Stream#repartition emits a leftover accumulator as the last element; it's either empty or contains an unterminated message; drop it
-          .map(_.map(_.data)) // project to text payload of websocket data frames
-          .map(_.mkString)
+          }
 
-        val messages: fs2.Stream[F, CryptoData] = serializedMessages
+          textFrames.through(concatRelatedFrames.toPipe)
+        }
+
+        val messages: fs2.Stream[F, CryptoData] = jsonMessages
           .evalMap { serializedMessage =>
             circe.parser.decode[Message](serializedMessage).pure[F].rethrow
           }.evalMapFilter {
