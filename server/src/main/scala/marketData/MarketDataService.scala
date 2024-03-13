@@ -14,57 +14,92 @@ import cats.effect.std.AtomicCell
 
 import service.*
 import marketData.exchange.ExchangeParameters
+import fs2.concurrent.Signal
+import fs2.concurrent.SignallingRef
+import marketData.FeedDefinition.Level2
+import marketData.FeedDefinition.Stub
+import scala.collection.concurrent.TrieMap
 
 trait MarketDataService[F[_]] {
-  def stream(feed: FeedDefinition[?]): Stream[F, feed.Message]
+  def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
 }
 
 object MarketDataService {
 
-  def apply[F[_]: Sync](backingStreams: BackingStreams[F], exchangeParameters: ExchangeParameters): MarketDataService[F] = {
+  def apply[F[_]](backingStreams: BackingStreams[F], exchangeParameters: ExchangeParameters)(using F: Async[F]): F[MarketDataService[F]] = {
     type SubscribersCount = Int
-    val locks: Map[FeedDefinition[?], Mutex[F]] =
-      ??? // populate at service instantiation for all feedDefs under exchangeParameters; same for below
+    val locks: F[Map[FeedDefinition[?], Mutex[F]]] = exchangeParameters
+      .allFeedDefs.traverse { feedDef =>
+        Mutex.apply[F].map(feedDef -> _)
+      }.map(_.toMap)
 
-    val topics: MapRef[F, FeedDefinition[?], Topic[F, ?]] = ???
+    val topics: F[MapRef[F, FeedDefinition[?], Option[Topic[F, ?]]]] = exchangeParameters
+      .allFeedDefs.traverse {
+        case feed @ Level2(currency1, currency2) => Topic[F, Level2.Message].map(feed -> _)
+        case feed: Stub => Topic[F, Stub.Message].map(feed -> _)
+      }.map(TrieMap.from[FeedDefinition[?], Topic[F, ?]]).map(MapRef.fromScalaConcurrentMap)
 
-    val activeSubs: MapRef[F, FeedDefinition[?], SubscribersCount] = ???
+    val activeSubs: F[MapRef[F, FeedDefinition[?], Option[SubscribersCount]]] =
+      F.delay {
+        TrieMap
+          .from[FeedDefinition[?], SubscribersCount](
+            exchangeParameters.allFeedDefs.map { _ -> 0 }
+          )
+      }.map(MapRef.fromScalaConcurrentMap)
 
-    new MarketDataService[F] {
+    (locks, topics, activeSubs).mapN {
+      case (
+            locks,
+            topics,
+            activeSubs
+          ) =>
+        new MarketDataService[F] {
 
-      override def stream(feed: FeedDefinition[?]): Stream[F, feed.Message] = {
-        def setupConsumingStream = locks(feed).lock.surround {
-          val registerPublisherIfFirstToSubscribe =
-            (activeSubs(feed).get, topics(feed).get).flatMapN { case (subsCount, topic: Topic[F, feed.Message]) =>
-              if (subsCount == 0) backingStreams.stream(feed).through(topic.publish).compile.drain
-              else Sync[F].unit
+          override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
+            def setupConsumingStream = locks(feed).lock.surround {
+              val registerPublisherIfFirstToSubscribe =
+                activeSubs(feed).get.flatMap { subsCount =>
+                  Topic
+                    .apply[F, feed.Message]
+                    .flatTap { topic => topics(feed).set(Some(topic)) }
+                    .flatTap { topic =>
+                      F.background {
+                        backingStreams.stream(feed).through(topic.publish).compile.drain
+                      }.allocated
+                    }
+                    .whenA(subsCount.contains(0))
+                }
+
+              val incrementSubsCount =
+                activeSubs(feed).tryModify { count => count.map(_ + 1) -> () }.map(_.toRight(new Exception)).flatMap(F.fromEither)
+              val subscribeToTopic: F[Stream[F, Message]] =
+                topics(feed)
+                  .get.map { case someTopic: Some[Topic[F, feed.Message] @unchecked] => someTopic.value.subscribeUnbounded }
+
+              registerPublisherIfFirstToSubscribe *> incrementSubsCount *> subscribeToTopic
             }
 
-          val incrementSubsCount = activeSubs(feed).modify(_ + 1 -> ())
-          val subscribeToTopic = topics(feed).get.map { case (topic: Topic[F, feed.Message]) => topic.subscribeUnbounded }
+            val decrementSubsCountAndPotentiallyStopPublisher = locks(feed).lock.surround {
+              val deregisterPublisherIfLastToUnsub =
+                (activeSubs(feed).get, topics(feed).get).flatMapN { case (subsCount, topic: Some[Topic[F, feed.Message] @unchecked]) =>
+                  if (subsCount.contains(1)) topic.value.close.void
+                  else F.unit
+                }
 
-          registerPublisherIfFirstToSubscribe *> incrementSubsCount *> subscribeToTopic
-        }
+              val decrementSubsCount = activeSubs(feed).modify { count => count.map(_ - 1) -> () }
 
-        val decrementSubsCountAndPotentiallyStopPublisher = locks(feed).lock.surround {
-          val deregisterPublisherIfLastToUnsub =
-            (activeSubs(feed).get, topics(feed).get).flatMapN { case (subsCount, topic: Topic[F, feed.Message]) =>
-              if (subsCount == 1) backingStreams.stream(feed).through(topic.publish).compile.drain
-              else Sync[F].unit
+              deregisterPublisherIfLastToUnsub *> decrementSubsCount
             }
 
-          val decrementSubsCount = activeSubs(feed).modify(_ - 1 -> ())
-
-          deregisterPublisherIfLastToUnsub *> decrementSubsCount
+            Stream
+              .bracket(
+                acquire = setupConsumingStream
+              )(
+                release = _ => decrementSubsCountAndPotentiallyStopPublisher
+              ).flatten
+          }
         }
-
-        Stream
-          .bracket(
-            acquire = setupConsumingStream
-          )(
-            release = _ => decrementSubsCountAndPotentiallyStopPublisher
-          ).flatten
-      }
     }
+
   }
 }

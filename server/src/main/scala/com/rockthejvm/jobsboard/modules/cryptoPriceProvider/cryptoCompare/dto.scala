@@ -15,7 +15,7 @@ object dto {
         Decoder[CryptoData].widen,
         Decoder[UnrecoverableError].widen,
         Decoder[Ignore.type].widen
-      ).reduceLeft(_ or _)
+      ).reduceLeft(_.or(_))
 
     // {"TYPE":"5","MARKET":"CCCAGG","FROMSYMBOL":"BTC","TOSYMBOL":"USD","FLAGS":2,"MEDIAN":49735.6637659428,"LASTTRADEID":"217093517","PRICE":49735.6637659428,"LASTUPDATE":1707832427,"LASTVOLUME":0.02800179,"LASTVOLUMETO":1392.2750404647,"VOLUMEHOUR":2593.3459684,"VOLUMEHOURTO":128681184.345007,"VOLUMEDAY":15494.02153829,"VOLUMEDAYTO":773812157.387051,"VOLUME24HOUR":49236.99141083,"VOLUME24HOURTO":2449291847.091117,"CURRENTSUPPLYMKTCAP":976108705309.5936,"CIRCULATINGSUPPLYMKTCAP":976108705309.5936,"MAXSUPPLYMKTCAP":1044448937935.905}
     case class CryptoData(
@@ -48,8 +48,8 @@ object dto {
     }
 
     /**
-     * Represents any kind of message from cryptodata following which we should drop the websocket connection and do not
-     * attempt to reconnect
+     * Represents any kind of message from cryptodata following which we should drop the websocket connection and do not attempt to
+     * reconnect
      *
      * Wraps a single Contents case class which reflects the decoded JSON object's shape.
      *

@@ -67,7 +67,7 @@ object EmberServer {
               List(healthENdpoint)
             )
 
-          middlewares(webSocketInterpretedEndpoints combineK httpInterpretedEndpoints).orNotFound
+          middlewares(webSocketInterpretedEndpoints `combineK` httpInterpretedEndpoints).orNotFound
           // middlewares(webSocketInterpretedEndpoints).orNotFound
         }
         .build
