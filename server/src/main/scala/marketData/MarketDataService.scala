@@ -20,6 +20,10 @@ import marketData.FeedDefinition.Level2
 import marketData.FeedDefinition.Stub
 import scala.collection.concurrent.TrieMap
 
+import org.http4s.client.websocket.WSClientHighLevel
+import org.http4s.jdkhttpclient.JdkWSClient
+import cats.effect.std.Queue
+
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
 }
@@ -27,75 +31,89 @@ trait MarketDataService[F[_]] {
 object MarketDataService {
 
   def apply[F[_]](backingStreams: BackingStreams[F], exchangeParameters: ExchangeParameters)(using F: Async[F]): F[MarketDataService[F]] = {
-    type SubscribersCount = Int
+
+    /**
+     * Triple containing what we need to share a data feed among subscribers.
+     *
+     * @param signal
+     *   Reports the updates of the backing data feed
+     * @param finalizer
+     *   Finalizer to close the backing data feed when subscribersCount reaches 0
+     * @param subscribersCount
+     *   Number of users currently sharing the backing data feed
+     */
+    case class SignalFinalizerCount[M](
+        signal: Signal[F, M],
+        finalizer: F[Unit],
+        subscribersCount: Int
+    )
+
     val locks: F[Map[FeedDefinition[?], Mutex[F]]] = exchangeParameters
       .allFeedDefs.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
-    val topics: F[MapRef[F, FeedDefinition[?], Option[Topic[F, ?]]]] = exchangeParameters
-      .allFeedDefs.traverse {
-        case feed @ Level2(currency1, currency2) => Topic[F, Level2.Message].map(feed -> _)
-        case feed: Stub => Topic[F, Stub.Message].map(feed -> _)
-      }.map(TrieMap.from[FeedDefinition[?], Topic[F, ?]]).map(MapRef.fromScalaConcurrentMap)
+    val initSFCs: F[Map[FeedDefinition[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeParameters
+      .allFeedDefs.traverse { feedDef =>
+        Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
+      }.map(_.toMap)
 
-    val activeSubs: F[MapRef[F, FeedDefinition[?], Option[SubscribersCount]]] =
+    val activeSubs: F[MapRef[F, FeedDefinition[?], Option[Int]]] =
       F.delay {
         TrieMap
-          .from[FeedDefinition[?], SubscribersCount](
+          .from[FeedDefinition[?], Int](
             exchangeParameters.allFeedDefs.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
 
-    (locks, topics, activeSubs).mapN {
+    (locks, initSFCs).mapN {
       case (
             locks,
-            topics,
-            activeSubs
+            sfcMap
           ) =>
+        def sfc[M](feedDef: FeedDefinition[M]): F[Ref[F, Option[SignalFinalizerCount[M]]]] = {
+          F.fromOption(sfcMap.get(feedDef).map(_.asInstanceOf[Ref[F, Option[SignalFinalizerCount[M]]]]), new Exception(""))
+        }
+
         new MarketDataService[F] {
 
           override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
-            def setupConsumingStream = locks(feed).lock.surround {
-              val registerPublisherIfFirstToSubscribe =
-                activeSubs(feed).get.flatMap { subsCount =>
-                  Topic
-                    .apply[F, feed.Message]
-                    .flatTap { topic => topics(feed).set(Some(topic)) }
-                    .flatTap { topic =>
-                      F.background {
-                        backingStreams.stream(feed).through(topic.publish).compile.drain
-                      }.allocated
-                    }
-                    .whenA(subsCount.contains(0))
+            def listenToAndPotentiallySetupBackingFeed = locks(feed).lock.surround {
+              for {
+                sfcRef <- sfc(feed)
+                currentSFC <- sfcRef.get
+                updatesFromBackingFeed <- currentSFC match {
+                  case None =>
+                    // setup  shared backing feed and register its signal and finalizer
+                    backingStreams
+                      .stream(feed).hold1Resource.allocated.flatTap { case (signal, finalizer) =>
+                        sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, 1)))
+                      }.map(_._1)
+                  case Some(SignalFinalizerCount(signal, finalizer, count)) =>
+                    sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count + 1))).as(signal)
                 }
-
-              val incrementSubsCount =
-                activeSubs(feed).tryModify { count => count.map(_ + 1) -> () }.map(_.toRight(new Exception)).flatMap(F.fromEither)
-              val subscribeToTopic: F[Stream[F, Message]] =
-                topics(feed)
-                  .get.map { case someTopic: Some[Topic[F, feed.Message] @unchecked] => someTopic.value.subscribeUnbounded }
-
-              registerPublisherIfFirstToSubscribe *> incrementSubsCount *> subscribeToTopic
+              } yield updatesFromBackingFeed.discrete
             }
 
-            val decrementSubsCountAndPotentiallyStopPublisher = locks(feed).lock.surround {
-              val deregisterPublisherIfLastToUnsub =
-                (activeSubs(feed).get, topics(feed).get).flatMapN { case (subsCount, topic: Some[Topic[F, feed.Message] @unchecked]) =>
-                  if (subsCount.contains(1)) topic.value.close.void
-                  else F.unit
-                }
-
-              val decrementSubsCount = activeSubs(feed).modify { count => count.map(_ - 1) -> () }
-
-              deregisterPublisherIfLastToUnsub *> decrementSubsCount
+            def potentiallyShutdownBackingFeed = locks(feed).lock.surround {
+              for {
+                sfcRef <- sfc(feed)
+                SignalFinalizerCount(signal, finalizer, count) <- sfcRef
+                  .get.map(_.toRight(new Exception("SignalFinalizerCount Map was expected to contain an entry at time of release"))).rethrow
+                _ <-
+                  if (count == 1) {
+                    finalizer *> sfcRef.set(None)
+                  } else {
+                    sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count - 1)))
+                  }
+              } yield ()
             }
 
             Stream
               .bracket(
-                acquire = setupConsumingStream
+                acquire = listenToAndPotentiallySetupBackingFeed
               )(
-                release = _ => decrementSubsCountAndPotentiallyStopPublisher
+                release = _ => potentiallyShutdownBackingFeed
               ).flatten
           }
         }

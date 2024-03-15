@@ -24,7 +24,8 @@ object MarketDataServiceSpec extends SimpleIOSuite {
           Stream
             .eval(ref.update(_ + 1)) >> Stream
             .iterate(start = 0)(_ + 1).map(FeedDefinition.Stub.Message.apply)
-            .covary[IO].evalTap(IO.print)
+            .covary[IO]
+        // .evalTap(IO.print)
       }
 
     }
