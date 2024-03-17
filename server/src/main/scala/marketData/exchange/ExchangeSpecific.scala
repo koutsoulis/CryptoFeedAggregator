@@ -3,18 +3,18 @@ package marketData.exchange
 import marketData.Currency
 import marketData.FeedDefinition
 
-trait ExchangeParameters {
+trait ExchangeSpecific {
   def allCurrencyPairs: List[(Currency, Currency)]
 
   def allFeedDefs: List[FeedDefinition[?]] = {
-    val allLevel2Defs: List[FeedDefinition.Level2] = allCurrencyPairs.map(FeedDefinition.Level2.apply)
+    val allLevel2Defs: List[FeedDefinition.OrderbookFeed] = allCurrencyPairs.map(FeedDefinition.OrderbookFeed.apply)
 
     allLevel2Defs // plus others
   }
 }
 
-object ExchangeParameters {
-  def stub: ExchangeParameters = new ExchangeParameters {
+object ExchangeSpecific {
+  def stub: ExchangeSpecific = new ExchangeSpecific {
 
     override def allCurrencyPairs: List[(Currency, Currency)] = ???
 

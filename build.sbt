@@ -149,6 +149,7 @@ lazy val server = (project in file("server"))
       "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
       "com.github.cb372" %% "cats-retry" % catsRetryVersion,
+      "org.systemfw" %% "upperbound" % "0.5.0",
       "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
     ),
     Compile / tpolecatExcludeOptions ++= Set(

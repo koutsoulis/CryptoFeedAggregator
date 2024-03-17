@@ -12,17 +12,17 @@ import cats.effect.std.MapRef
 import cats.effect.std.Mutex
 import cats.effect.std.AtomicCell
 
-import service.*
-import marketData.exchange.ExchangeParameters
+import marketData.exchange.ExchangeSpecific
 import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
-import marketData.FeedDefinition.Level2
+import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition.Stub
 import scala.collection.concurrent.TrieMap
 
 import org.http4s.client.websocket.WSClientHighLevel
 import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
+import backingStreams.BackingStreamsService
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
@@ -30,10 +30,11 @@ trait MarketDataService[F[_]] {
 
 object MarketDataService {
 
-  def apply[F[_]](backingStreams: BackingStreams[F], exchangeParameters: ExchangeParameters)(using F: Async[F]): F[MarketDataService[F]] = {
+  def apply[F[_]](backingStreams: BackingStreamsService[F], exchangeParameters: ExchangeSpecific)(
+      using F: Async[F]): F[MarketDataService[F]] = {
 
     /**
-     * Triple containing what we need to share a data feed among subscribers.
+     * Triple containing what we need to share a data feed among multiple subscribers.
      *
      * @param signal
      *   Reports the updates of the backing data feed
@@ -78,6 +79,8 @@ object MarketDataService {
         new MarketDataService[F] {
 
           override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
+            // TODO think generally acquisition stages should not be grouped together, but paired together with their
+            // correpsonding finalizer in a Resource, but the case below seems innocuous
             def listenToAndPotentiallySetupBackingFeed = locks(feed).lock.surround {
               for {
                 sfcRef <- sfc(feed)

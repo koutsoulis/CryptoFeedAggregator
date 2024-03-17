@@ -1,15 +1,13 @@
 package marketData
 
+import marketData.exchange.impl.binance.domain.Orderbook
+
 sealed trait FeedDefinition[M] {
   type Message = M
 }
 
 object FeedDefinition {
-  case class Level2(currency1: Currency, currency2: Currency) extends FeedDefinition[Level2.Message]
-
-  object Level2 {
-    case class Message(buys: List[(BigDecimal, Int)], sells: List[(BigDecimal, Int)])
-  }
+  case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedDefinition[Orderbook]
 
   case class Stub(_value: Boolean = false) extends FeedDefinition[Stub.Message]
   object Stub {
