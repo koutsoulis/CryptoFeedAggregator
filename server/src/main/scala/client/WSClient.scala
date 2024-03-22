@@ -1,0 +1,60 @@
+package client
+
+import client.rateLimits.RLSemaphoreAndReleaseTime
+import _root_.io.circe
+import cats.effect.*
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import org.http4s
+import org.http4s.client.websocket
+import org.http4s.circe.CirceEntityCodec.*
+import org.http4s.dsl.*
+import org.http4s.implicits.*
+import org.http4s.Uri
+import fs2.Stream
+
+trait WSClient[F[_]: Async] {
+  def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out]
+}
+
+object WSClient {
+  class WSCLientLive[F[_]] private (
+      wsClient: websocket.WSClientHighLevel[F],
+      wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
+  )(
+      using F: Async[F]
+  ) extends WSClient {
+
+    /**
+     * Assumption: ws market stream messages are guaranteed to arrive in order
+     *
+     * Starts counting down to release the permits after the websocket connection has been established. It would be more pragmatic (easier
+     * to express, reason about and correct enough) if the countdown started right before emitting the request to establish the connection ,
+     * by also incrementing the time to countdown by say ~2secs to account for possible high latencies. And if the 2 secs are not enough and
+     * we hit the rate limits not bother recover.
+     *
+     * @param uri
+     * @return
+     */
+    override def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out] = {
+      val establishWSConnection = F.bracketFull { poll =>
+        F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
+          poll(wsEstablishConnectionRL.semaphore.acquire)
+      } { wsRequest =>
+        wsClient.connectHighLevel(wsRequest).allocatedCase
+      } { (_, _) =>
+        F.start(F.sleep(wsEstablishConnectionRL.releaseTime) *> wsEstablishConnectionRL.semaphore.release).void
+      }
+
+      Stream
+        .resource(
+          Resource.applyFull[F, websocket.WSConnectionHighLevel[F]] { poll => poll(establishWSConnection) }
+        ).flatMap(_.receiveStream).evalMapChunk {
+          case websocket.WSFrame.Text(data, _) => F.fromEither(circe.parser.decode[Out](data))
+          case _: websocket.WSFrame.Binary =>
+            F.raiseError(new Exception(s"Expected text but received binary ws frame while consuming stream of $uri"))
+        }
+    }
+  }
+}

@@ -30,7 +30,7 @@ class Client[F[_]](
     httpClient: http4s.client.Client[F],
     wsClient: websocket.WSClientHighLevel[F],
     requestWeight: RLSemaphoreAndReleaseTime[F],
-    rawRequests: RLSemaphoreAndReleaseTime[F],
+    // rawRequests: RLSemaphoreAndReleaseTime[F],
     wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
 )(using F: Async[F]) {
   def orderbookSnapshot(currency1: Currency, currency2: Currency): F[Orderbook] =
@@ -99,6 +99,15 @@ class Client[F[_]](
 }
 
 object Client {
+
+  /**
+   * Holds what needed to ensure we don't hit rate limits
+   *
+   * @param semaphore
+   *   Holds the permits available
+   * @param releaseTime
+   *   After acquiring a number of permits at once, this is how long you have to wait before releasing them
+   */
   case class RLSemaphoreAndReleaseTime[F[_]](semaphore: Semaphore[F], releaseTime: Duration)
 }
 
