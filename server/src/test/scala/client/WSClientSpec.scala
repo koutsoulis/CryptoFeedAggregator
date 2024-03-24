@@ -25,50 +25,53 @@ import cats.effect.std.Semaphore
 import client.rateLimits.RLSemaphoreAndReleaseTime
 import cats.effect.testkit.TestControl
 import _root_.io.circe
+import client.testUtils.*
+import scala.concurrent.duration.FiniteDuration
 
 object WSClientSpec extends SimpleIOSuite {
 
-  val stubBackingClient: IO[(WSClientHighLevel[IO], Ref[IO, Vector[Duration]])] = IO.ref(Vector.empty[Duration]).map { receptionTimes =>
-    val backingClient = new websocket.WSClientHighLevel[IO] {
+  val stubBackingClient: IO[(WSClientHighLevel[IO], Ref[IO, Vector[FiniteDuration]])] =
+    IO.ref(Vector.empty[FiniteDuration]).map { receptionTimes =>
+      val backingClient = new websocket.WSClientHighLevel[IO] {
 
-      override def connectHighLevel(request: WSRequest): Resource[IO, WSConnectionHighLevel[IO]] =
-        Resource.make(
-          acquire = IO.pure(
-            new WSConnectionHighLevel[IO] {
+        override def connectHighLevel(request: WSRequest): Resource[IO, WSConnectionHighLevel[IO]] =
+          Resource.make(
+            acquire = IO.pure(
+              new WSConnectionHighLevel[IO] {
 
-              override def receiveStream: Stream[IO, WSDataFrame] = Stream
-                .fromIterator[IO](
-                  Iterator.from(0).map(_.toString()).map { str => WSFrame.Text(str) },
-                  1
-                )
+                override def receiveStream: Stream[IO, WSDataFrame] = Stream
+                  .fromIterator[IO](
+                    Iterator.from(0).map(_.toString()).map { str => WSFrame.Text(str) },
+                    1
+                  )
 
-              override def receive: IO[Option[WSDataFrame]] = ???
+                override def receive: IO[Option[WSDataFrame]] = ???
 
-              override def send(wsf: WSDataFrame): IO[Unit] = ???
+                override def send(wsf: WSDataFrame): IO[Unit] = ???
 
-              override def closeFrame: DeferredSource[IO, Close] = ???
+                override def closeFrame: DeferredSource[IO, Close] = ???
 
-              override def sendMany[G[_$8]: Foldable, A <: WSDataFrame](wsfs: G[A]): IO[Unit] = ???
+                override def sendMany[G[_$8]: Foldable, A <: WSDataFrame](wsfs: G[A]): IO[Unit] = ???
 
-              override def subprotocol: Option[String] = ???
+                override def subprotocol: Option[String] = ???
 
+              }
+            ) <* IO.realTime.flatMap { currentTime =>
+              receptionTimes.update(_.appended(currentTime))
             }
-          ) <* IO.realTime.flatMap { currentTime =>
-            receptionTimes.update(_.appended(currentTime))
-          }
-        )(
-          release = _ => IO.unit
-        )
+          )(
+            release = _ => IO.unit
+          )
 
+      }
+
+      backingClient -> receptionTimes
     }
 
-    backingClient -> receptionTimes
-  }
-
   test("respects rate limits") {
-    val rateLimitPermits = 10
-    val permitCostPerRequest = 1
+    val rateLimitPermits = 3
     val rateLimitPeriod = 100.milliseconds // arbitrary positive time
+    val maxRequestsPerPeriodExpected = rateLimitPermits
 
     def clientUnderTestAndReceptionTimes = (
       stubBackingClient,
@@ -85,20 +88,22 @@ object WSClientSpec extends SimpleIOSuite {
           ()
         }
         .take(1)
-      _ <- wsConnect.compile.drain.parReplicateA_(rateLimitPermits * 2 + 1)
-      _ <- IO.sleep(rateLimitPeriod * (rateLimitPermits * 2 + 2))
+      _ <- wsConnect.compile.drain.parReplicateA_(maxRequestsPerPeriodExpected * 2 + 1)
+      _ <- IO.sleep(rateLimitPeriod * (maxRequestsPerPeriodExpected * 2 + 2))
       receptionTimes <- receptionTimesRef.get
     } yield receptionTimes
 
-    TestControl.executeEmbed(scenario).flatMap { receptionTimes =>
-      IO.print(receptionTimes) *>
-        expect(true).pure
+    TestControl.executeEmbed(scenario).map { receptionTimes =>
+      expect(requestEmissionRateInLineWithRLimits(receptionTimes, maxRequestsPerPeriodExpected, rateLimitPeriod))
     }
   }
+
+  // test("allows for bursts in request traffic")
+
+  // test("makes the most of the rate limits")
 
   // test("cancels while blocked on permit acquisition")
 
   // test("cancels stream mid consumption")
 
-  // val program = new WSCLient.WSCLientLive()
 }

@@ -53,50 +53,49 @@ object HttpClientSpec extends SimpleIOSuite {
       ()
     }
 
-  test("HttpClientLive respects rate limits") {
+  {
     val rateLimitPermits = 10
     val permitCostPerRequest = 3
     val maxRequestsPerPeriodExpected = rateLimitPermits / permitCostPerRequest
     val rateLimitPeriod = 100.milliseconds // arbitrary positive time
+    val totalNumOfRequests = maxRequestsPerPeriodExpected * 2 + 1
 
     val scenario = for {
       (clientUnderTest, requestEmissionTimes) <- clientUnderTestAndRequestEmissionTimes(rateLimitPermits, rateLimitPeriod)
       sendRequest = wrappedGet(clientUnderTest, permitCostPerRequest)
-      _ <- sendRequest.parReplicateA_(maxRequestsPerPeriodExpected * 2 + 1)
+      _ <- sendRequest.parReplicateA_(totalNumOfRequests)
       _ <- IO.sleep(
         1.millisecond
       ) // sleep for arbitrary positive duration to ensure the following action is strictly after permit acquisition
       requestEmissionTimes <- requestEmissionTimes.get
     } yield requestEmissionTimes
 
-    TestControl
-      .executeEmbed(scenario)
-      .map { requestReceptionTimes =>
-        expect(requestEmissionRateInLineWithRLimits(requestReceptionTimes, maxRequestsPerPeriodExpected, rateLimitPeriod))
+    test("HttpClientLive respects rate limits") {
+      TestControl
+        .executeEmbed(scenario)
+        .map { requestReceptionTimes =>
+          expect(requestEmissionRateInLineWithRLimits(requestReceptionTimes, maxRequestsPerPeriodExpected, rateLimitPeriod))
+        }
+    }
+
+    test("HttpClientLive allows bursts in request traffic ") {
+      TestControl.executeEmbed(scenario).map { requestEmissionTimes =>
+        val rateLimitRefreshWindowsRequiredToGoThroughAllRequests =
+          math.ceil(totalNumOfRequests.toDouble / maxRequestsPerPeriodExpected.toDouble).toInt
+
+        // we send requests in batches, once per window
+        expect(
+          requestEmissionTimes.distinct.size == rateLimitRefreshWindowsRequiredToGoThroughAllRequests
+        )
       }
-  }
+    }
 
-  test("HttpClientLive allows bursts in request traffic and makes the most of the rate limits") {
-    val rateLimitPermits = 10
-    val permitCostPerRequest = 3
-    val maxRequestsPerPeriodExpected = rateLimitPermits / permitCostPerRequest
-    val rateLimitPeriod = 100.milliseconds // arbitrary positive time
-
-    val scenario = for {
-      (clientUnderTest, requestEmissionTimes) <- clientUnderTestAndRequestEmissionTimes(rateLimitPermits, rateLimitPeriod)
-      sendRequest = wrappedGet(clientUnderTest, permitCostPerRequest)
-      _ <- sendRequest.parReplicateA_(maxRequestsPerPeriodExpected)
-      _ <- IO.sleep(
-        1.millisecond
-      ) // sleep for arbitrary positive duration to ensure the following action is strictly after permit acquisition
-      requestEmissionTimes <- requestEmissionTimes.get
-    } yield requestEmissionTimes
-
-    TestControl.executeEmbed(scenario).map { requestEmissionTimes =>
-      expect(
-        requestEmissionTimes.distinct.size == 1 && // expect all requests to be emitted at the same time (allows bursts)
-          requestEmissionTimes.size == maxRequestsPerPeriodExpected // all the requests where emitted
-      )
+    test("HttpClientLive makes the most of the rate limits") {
+      TestControl.executeEmbed(scenario).map { requestEmissionTimes =>
+        expect(
+          requestEmissionTimes.size == totalNumOfRequests
+        )
+      }
     }
   }
 
