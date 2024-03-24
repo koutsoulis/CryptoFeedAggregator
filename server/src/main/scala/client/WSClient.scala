@@ -19,7 +19,7 @@ trait WSClient[F[_]: Async] {
 }
 
 object WSClient {
-  class WSCLientLive[F[_]] private (
+  class WSCLientLive[F[_]](
       wsClient: websocket.WSClientHighLevel[F],
       wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
   )(
@@ -57,4 +57,9 @@ object WSClient {
         }
     }
   }
+
+  def apply[F[_]: Async](
+      wsClient: websocket.WSClientHighLevel[F],
+      wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
+  ): WSClient[F] = WSCLientLive(wsClient, wsEstablishConnectionRL)
 }
