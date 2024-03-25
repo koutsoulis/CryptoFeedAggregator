@@ -64,9 +64,6 @@ object HttpClientSpec extends SimpleIOSuite {
       (clientUnderTest, requestEmissionTimes) <- clientUnderTestAndRequestEmissionTimes(rateLimitPermits, rateLimitPeriod)
       sendRequest = wrappedGet(clientUnderTest, permitCostPerRequest)
       _ <- sendRequest.parReplicateA_(totalNumOfRequests)
-      _ <- IO.sleep(
-        1.millisecond
-      ) // sleep for arbitrary positive duration to ensure the following action is strictly after permit acquisition
       requestEmissionTimes <- requestEmissionTimes.get
     } yield requestEmissionTimes
 
@@ -78,7 +75,7 @@ object HttpClientSpec extends SimpleIOSuite {
         }
     }
 
-    test("HttpClientLive allows bursts in request traffic ") {
+    test("allows bursts in request traffic ") {
       TestControl.executeEmbed(scenario).map { requestEmissionTimes =>
         val rateLimitRefreshWindowsRequiredToGoThroughAllRequests =
           math.ceil(totalNumOfRequests.toDouble / maxRequestsPerPeriodExpected.toDouble).toInt
@@ -90,11 +87,13 @@ object HttpClientSpec extends SimpleIOSuite {
       }
     }
 
-    test("HttpClientLive makes the most of the rate limits") {
+    test("makes the most of the rate limits") {
       TestControl.executeEmbed(scenario).map { requestEmissionTimes =>
-        expect(
-          requestEmissionTimes.size == totalNumOfRequests
-        )
+        // send all of them
+        expect(requestEmissionTimes.size == totalNumOfRequests) &&
+        // send them at the earliest opportunity there are permits available
+        expect(requestEmissionTimes.head == 0.seconds) &&
+        expect(requestEmissionTimes.distinct.sliding2.forall { timesPair => timesPair._2 - timesPair._1 == rateLimitPeriod })
       }
     }
   }
