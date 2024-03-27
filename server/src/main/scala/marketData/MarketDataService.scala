@@ -22,7 +22,6 @@ import scala.collection.concurrent.TrieMap
 import org.http4s.client.websocket.WSClientHighLevel
 import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
-import backingStreams.BackingStreamsService
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
@@ -30,8 +29,7 @@ trait MarketDataService[F[_]] {
 
 object MarketDataService {
 
-  def apply[F[_]](backingStreams: BackingStreamsService[F], exchangeParameters: ExchangeSpecific)(
-      using F: Async[F]): F[MarketDataService[F]] = {
+  def apply[F[_]](exchangeParameters: ExchangeSpecific[F])(using F: Async[F]): F[MarketDataService[F]] = {
 
     /**
      * Triple containing what we need to share a data feed among multiple subscribers.
@@ -88,7 +86,7 @@ object MarketDataService {
                 updatesFromBackingFeed <- currentSFC match {
                   case None =>
                     // setup  shared backing feed and register its signal and finalizer
-                    backingStreams
+                    exchangeParameters
                       .stream(feed).hold1Resource.allocated.flatTap { case (signal, finalizer) =>
                         sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, 1)))
                       }.map(_._1)

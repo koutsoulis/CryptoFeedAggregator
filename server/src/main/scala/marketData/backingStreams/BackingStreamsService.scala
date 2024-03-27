@@ -9,12 +9,12 @@ import marketData.exchange.ExchangeSpecific
 import org.http4s.jdkhttpclient.JdkWSClient
 import org.http4s.client.websocket.WSClientHighLevel
 
-trait BackingStreamsService[F[_]] {
+trait BackingStreamsService[F[_]: Async] {
   def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
 }
 
 object BackingStreamsService {
-  class Live[F[_]](exchangeParameters: ExchangeSpecific, wsClient: WSClientHighLevel[F]) extends BackingStreamsService[F] {
+  class Live[F[_]: Async](exchangeParameters: ExchangeSpecific[F]) extends BackingStreamsService[F] {
     override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
       // wsClient.connectHighLevel()
       ???

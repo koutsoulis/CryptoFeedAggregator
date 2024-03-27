@@ -106,12 +106,14 @@ lazy val kittensVersion = "3.2.0"
 import org.typelevel.scalacoptions.ScalacOptions
 
 lazy val server = (project in file("server"))
+  .configs(IntegrationTest)
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     name := "typelevel-project",
     scalaVersion := scala3Version,
     organization := rockthejvm,
     scalacOptions ++= Seq("-source:future", "-no-indent"),
+    Defaults.itSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "kittens" % kittensVersion,
       "org.http4s" %% "http4s-dsl" % http4sVersion,
@@ -135,7 +137,7 @@ lazy val server = (project in file("server"))
       "org.typelevel" %% "log4cats-noop" % log4catsVersion % Test,
       // "org.scalameta" %% "munit" % munitVersion % Test,
       // "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % "test",
-      "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % Test,
+      "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % "it,test",
       "org.typelevel" %% "cats-effect-testing-scalatest" % scalaTestCatsEffectVersion % Test,
       "org.testcontainers" % "testcontainers" % testContainerVersion % Test,
       "org.testcontainers" % "postgresql" % testContainerVersion % Test,

@@ -6,11 +6,12 @@ import _root_.io.scalaland.chimney
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import io.scalaland.chimney.inlined.*
+import scala.collection.immutable.TreeMap
 
 final case class Orderbook(
     lastUpdateId: Long,
-    bidLevelToQuantity: Map[BigDecimal, BigDecimal],
-    askLevelToQuantity: Map[BigDecimal, BigDecimal]
+    bidLevelToQuantity: TreeMap[BigDecimal, BigDecimal],
+    askLevelToQuantity: TreeMap[BigDecimal, BigDecimal]
 ) {
 
   /**
