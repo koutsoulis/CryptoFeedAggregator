@@ -6,13 +6,17 @@ import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
 import tyrian.*
 import tyrian.Html.*
+import cats.effect.*
 
 case class PageManager private (
     current: Page
 ) {
-  def update(msg: PageManager.Msg): PageManager = msg match {
+  def update(msg: PageManager.Msg): (PageManager, Cmd[IO, Msg]) = msg match {
     case PageManager.NavigateTo(page) =>
-      this.copy(current = page)
+      val action = page match {
+        case _ => Cmd.None
+      }
+      this.copy(current = page) -> action
 
     // case _ => this
   }
@@ -25,7 +29,7 @@ object PageManager {
   final case class NavigateTo(page: Page.SubtypesExhaustive)
 
   def apply: PageManager = {
-    val homePage = HomePage
+    val homePage = new HomePage
     new PageManager(current = homePage)
   }
 }

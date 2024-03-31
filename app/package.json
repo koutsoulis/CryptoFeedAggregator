@@ -9,6 +9,5 @@
         "parcel": "^2.1.0",
         "process": "^0.11.10",
         "sass": "^1.34.0"
-    },
-    "dependencies": {}
+    }
 }

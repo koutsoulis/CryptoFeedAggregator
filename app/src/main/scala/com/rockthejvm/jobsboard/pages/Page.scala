@@ -12,6 +12,5 @@ trait Page {
 }
 
 object Page {
-  type SubtypesExhaustive = HomePage.type | JobListPage.type | JobPage.type | NotFoundPage.type |
-    StreamingExamplePage.type
+  type SubtypesExhaustive = HomePage | JobPage.type | NotFoundPage.type | StreamingExamplePage.type
 }

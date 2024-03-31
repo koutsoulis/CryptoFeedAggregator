@@ -5,6 +5,7 @@ import tyrian.*
 import tyrian.Html.*
 import com.rockthejvm.jobsboard.App.Msg
 import com.rockthejvm.jobsboard.App.Model
+import tyrian.CSS
 
 object JobPage extends Page {
   override def view(model: Model): Html[Msg] =

@@ -24,6 +24,7 @@ import sttp.capabilities.fs2.Fs2Streams
 import sttp.tapir
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
+import fs2.io.net.Network
 
 object EmberServer {
 
@@ -44,7 +45,7 @@ object EmberServer {
       Resource.eval(MonadThrow[F].fromEither[EmberConfig](conf))
     ).parFlatMapN { case (backend, conf) =>
       EmberServerBuilder
-        .default[F]
+        .default[F](using Async[F], Network.forAsync[F])
         .withHost(conf.host)
         .withPort(conf.port)
         // .withHttpApp(errorMiddleware(httpApi.endpoints).orNotFound)

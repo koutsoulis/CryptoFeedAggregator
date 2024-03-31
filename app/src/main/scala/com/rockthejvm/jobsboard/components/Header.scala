@@ -15,8 +15,7 @@ object Header {
       renderLogo,
       div(`class` := "header-nav")(
         ul(`class` := "header-links")(
-          renderNavlink("jobs", pages.JobListPage),
-          renderNavlink("home", pages.HomePage),
+          renderNavlink("home", new pages.HomePage),
           renderNavlink("streaming", pages.StreamingExamplePage)
         )
       )

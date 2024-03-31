@@ -20,7 +20,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
     name := "common",
     scalaVersion := scala3Version,
     organization := rockthejvm,
-    scalacOptions ++= Seq("-source:future", "-no-indent"),
+    scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "org.http4s" %%% "http4s-client" % http4sVersion,
@@ -62,6 +62,7 @@ lazy val app = (project in file("app"))
     name := "app",
     scalaVersion := scala3Version,
     organization := rockthejvm,
+    scalacOptions ++= Seq("-Vprofile"),
     libraryDependencies ++= Seq(
       "io.indigoengine" %%% "tyrian-io" % tyrianVersion,
       "com.armanbilge" %%% "fs2-dom" % fs2DomVersion,
@@ -112,7 +113,7 @@ lazy val server = (project in file("server"))
     name := "typelevel-project",
     scalaVersion := scala3Version,
     organization := rockthejvm,
-    scalacOptions ++= Seq("-source:future", "-no-indent"),
+    scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
     Defaults.itSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "kittens" % kittensVersion,
