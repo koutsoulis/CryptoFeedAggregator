@@ -29,6 +29,21 @@ final case class OrderbookUpdate(
       acc.updated(level, quantity)
     }
   )
+
+  /**
+   * @param snapshot
+   *   Guaranteed to be no more up-to-date than `this` (reflected in their respective #lastUpdateId)
+   */
+  def update(snapshot: Orderbook): Orderbook =
+    Orderbook(
+      lastUpdateId = this.lastUpdateId,
+      bidLevelToQuantity = this.bidLevelToQuantity.foldLeft(snapshot.bidLevelToQuantity) { case (acc, (level, quantity)) =>
+        acc.updatedWith(level) { _ => Some(quantity).filter(_ > 0) }
+      },
+      askLevelToQuantity = this.askLevelToQuantity.foldLeft(snapshot.askLevelToQuantity) { case (acc, (level, quantity)) =>
+        acc.updatedWith(level) { _ => Some(quantity).filter(_ > 0) }
+      }
+    )
 }
 
 object OrderbookUpdate {

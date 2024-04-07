@@ -17,8 +17,6 @@ import org.http4s.Request
 import org.http4s.dsl.*
 import org.http4s.implicits.*
 import cats.MonadThrow
-import upperbound.*
-import upperbound.syntax.rate.*
 import scala.concurrent.duration.*
 import binance.dto
 import marketData.exchange.impl.binance.domain.RateLimits
@@ -64,7 +62,7 @@ class Binance[F[_]] private (
         relevantUpdates = rest.dropWhile(_.lastUpdateId <= snapshotIssuedAfterFirstUpdate.lastUpdateId)
         orderbookSnapshots = relevantUpdates
           .scan(snapshotIssuedAfterFirstUpdate) { case (snapshot, update) =>
-            snapshot.updateWith(update)
+            update.update(snapshot)
           }.pull.echo
       } yield orderbookSnapshots
 

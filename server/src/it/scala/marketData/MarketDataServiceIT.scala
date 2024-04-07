@@ -8,6 +8,8 @@ import cats.syntax.all.*
 import marketData.exchange.impl.Binance
 import org.http4s
 import concurrent.duration.DurationInt
+import marketData.exchange.impl.binance.domain.Orderbook
+import fs2.Stream
 
 object MarketDataServiceIT extends SimpleIOSuite {
   val mdService: Resource[IO, MarketDataService[IO]] = {
@@ -20,10 +22,15 @@ object MarketDataServiceIT extends SimpleIOSuite {
 
   test("bs test") {
     mdService.use { mdService =>
-      mdService
-        .stream(FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))).evalMap { ob =>
+      val res: IO[Unit] = mdService
+        .stream[Orderbook](FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC")))
+        .metered[IO](5.seconds).take(3)
+        .evalMap { ob =>
           IO.println(ob.lastUpdateId)
-        }.metered(1.seconds).take(3).compile.drain *>
+            *> IO.println(ob.askLevelToQuantity.head)
+        }.compile.drain
+
+      res *>
         IO.pure(expect(true))
     }
   }

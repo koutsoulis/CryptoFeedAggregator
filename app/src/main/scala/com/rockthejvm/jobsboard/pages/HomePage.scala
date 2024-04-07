@@ -119,7 +119,7 @@ class HomePage extends Page {
       )
     )(text)
 
-    def percentageBar(width: Double): tyrian.Html[Msg] = div(
+    def percentageBar(width: BigDecimal): tyrian.Html[Msg] = div(
       style(
         CSS.`background-color`("green") |+|
           CSS.height("100%") |+|

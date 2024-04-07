@@ -23,6 +23,9 @@ import _root_.io.circe
 // import monocle.syntax.all.*
 import fs2.Stream
 import concurrent.duration.DurationInt
+import _root_.io.bullet.borer.Cbor
+import _root_.io.bullet.borer.compat.scodec.*
+import marketData.exchange.impl.binance.domain.Orderbook
 
 object App {
   type Msg = NoOperation.type | PageManager.NavigateTo | UpdatedStatus | Model.SubscriptionDef | WSDF | UpdateSells
@@ -37,77 +40,77 @@ object App {
       pageManager: PageManager,
       displayStatus: String,
       subscriptionDefs: List[Model.SubscriptionDef],
-      sells: List[(Double, Double)]
+      sells: List[(BigDecimal, BigDecimal)]
   )
 
-  case class UpdateSells(sells: List[(Double, Double)])
+  case class UpdateSells(sells: List[(BigDecimal, BigDecimal)])
 
   object Model {
     case class SubscriptionDef(name: String, stream: fs2.Stream[IO, Msg], cleanup: IO[Unit])
   }
 }
 
-object Stubs {
-  val obStream: Stream[IO, List[(Double, Double)]] =
-    Stream
-      .bracket {
-        val iterator = Iterator.iterate(
-          List(
-            (1168.49, 0.0),
-            (1164.69, 12.0211),
-            (1163.38, 33.0049),
-            (1160.98, 45.5622),
-            (1158.64, 60.4819),
-            (1154.04, 71.5594),
-            (1146.54, 83.2051),
-            (1133.37, 106.8834),
-            (1129.63, 127.1219),
-            (1126.89, 145.2484),
-            (1115.14, 155.8074),
-            (1113.54, 171.8438),
-            (1110.49, 184.443),
-            (1106.92, 202.3068),
-            (1106.7, 224.5185),
-            (1104.03, 244.5286),
-            (1101.99, 256.5801),
-            (1099.57, 272.8992),
-            (1099.47, 289.2549),
-            (1095.76, 300.107),
-            (1091.75, 320.0837),
-            (1091.37, 334.7523),
-            (1086.9, 357.9836),
-            (1086.6, 375.3844),
-            (1081.13, 387.3668),
-            (1079.3, 403.3796),
-            (1074.56, 420.0898),
-            (1069.69, 438.8176),
-            (1068.59, 462.0495),
-            (1056.35, 484.2044),
-            (1052.93, 507.0559),
-            (1052.03, 529.1966),
-            (1047.46, 541.6345),
-            (1033.06, 551.942),
-            (1030.42, 569.7072),
-            (1025.65, 583.7136),
-            (1023.38, 608.1764),
-            (1020.04, 620.0944),
-            (1018.53, 644.661),
-            (1014.92, 661.6777)
-          )
-        ) { list =>
-          val factor = scala.util.Random.nextFloat()
-          list
-          // .map { case (p1, p2) => (factor * p1) -> p2 }
-        }
-        val str = Stream
-          .fromIterator[IO](
-            iterator,
-            1
-          )
+// object Stubs {
+//   val obStream: Stream[IO, List[(Double, Double)]] =
+//     Stream
+//       .bracket {
+//         val iterator = Iterator.iterate(
+//           List(
+//             (1168.49, 0.0),
+//             (1164.69, 12.0211),
+//             (1163.38, 33.0049),
+//             (1160.98, 45.5622),
+//             (1158.64, 60.4819),
+//             (1154.04, 71.5594),
+//             (1146.54, 83.2051),
+//             (1133.37, 106.8834),
+//             (1129.63, 127.1219),
+//             (1126.89, 145.2484),
+//             (1115.14, 155.8074),
+//             (1113.54, 171.8438),
+//             (1110.49, 184.443),
+//             (1106.92, 202.3068),
+//             (1106.7, 224.5185),
+//             (1104.03, 244.5286),
+//             (1101.99, 256.5801),
+//             (1099.57, 272.8992),
+//             (1099.47, 289.2549),
+//             (1095.76, 300.107),
+//             (1091.75, 320.0837),
+//             (1091.37, 334.7523),
+//             (1086.9, 357.9836),
+//             (1086.6, 375.3844),
+//             (1081.13, 387.3668),
+//             (1079.3, 403.3796),
+//             (1074.56, 420.0898),
+//             (1069.69, 438.8176),
+//             (1068.59, 462.0495),
+//             (1056.35, 484.2044),
+//             (1052.93, 507.0559),
+//             (1052.03, 529.1966),
+//             (1047.46, 541.6345),
+//             (1033.06, 551.942),
+//             (1030.42, 569.7072),
+//             (1025.65, 583.7136),
+//             (1023.38, 608.1764),
+//             (1020.04, 620.0944),
+//             (1018.53, 644.661),
+//             (1014.92, 661.6777)
+//           )
+//         ) { list =>
+//           val factor = scala.util.Random.nextFloat()
+//           list
+//           // .map { case (p1, p2) => (factor * p1) -> p2 }
+//         }
+//         val str = Stream
+//           .fromIterator[IO](
+//             iterator,
+//             1
+//           )
 
-        IO.println("openning stream") *> IO.delay(str)
-      }(_ => IO.println("closing stream")).flatten.metered(3.seconds).evalTap(IO.println)
-}
+//         IO.println("openning stream") *> IO.delay(str)
+//       }(_ => IO.println("closing stream")).flatten.metered(3.seconds).evalTap(IO.println)
+// }
 
 import App.*
 
@@ -121,15 +124,41 @@ class App extends TyrianIOApp[Msg, Model] {
     // val (router, routerCmd) = Router.startAt(urlLocation)
     // val pageUrl = Page.Url.of(urlLocation)
 
+    // val streamFromServer = {
+    //   http4s
+    //     .dom.WebSocketClient[IO].connectHighLevel(
+    //       websocket.WSRequest(
+    //         uri = http4s.Uri.fromString("wss://typelevel-project-backend.kotopoulion.xyz:4041/simpleWS").getOrElse(None.get)
+    //       )
+    //     ).allocated.map { case (conn, cleanup) => conn.receiveStream -> cleanup }
+    //     .map { case (conn, cleanup) =>
+    //       Model.SubscriptionDef("server stream", conn.map(WSDF.apply), cleanup)
+    //     }
+    //   // .stream(
+    //   //   http4s.Request(
+    //   //     uri = http4s.Uri.fromString("http://localhost:4041/simpleWS").getOrElse(None.get)
+    //   //   )
+    //   // ).map(_.bodyText).flatten
+    // }
+
     val streamFromServer = {
       http4s
         .dom.WebSocketClient[IO].connectHighLevel(
           websocket.WSRequest(
-            uri = http4s.Uri.fromString("wss://typelevel-project-backend.kotopoulion.xyz:4041/simpleWS").getOrElse(None.get)
+            uri = http4s.Uri.fromString("ws://127.0.0.1:8080/orderbook").getOrElse(None.get)
           )
-        ).allocated.map { case (conn, cleanup) => conn.receiveStream -> cleanup }
+        ).allocated
         .map { case (conn, cleanup) =>
-          Model.SubscriptionDef("server stream", conn.map(WSDF.apply), cleanup)
+          val receiveStreamTransformed: Stream[IO, UpdateSells] = conn
+            .receiveStream
+            .map {
+              case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
+              case _ => throw new Exception("unexpected non binary ws frame")
+            }.map(_.askLevelToQuantity.toList)
+            .map(UpdateSells.apply)
+            .debounce(500.milliseconds)
+
+          Model.SubscriptionDef("server stream", receiveStreamTransformed, cleanup)
         }
       // .stream(
       //   http4s.Request(
@@ -142,12 +171,9 @@ class App extends TyrianIOApp[Msg, Model] {
     Model(
       PageManager.apply,
       "",
-      List(
-        Model.SubscriptionDef("asd", Stubs.obStream.map(UpdateSells.apply), IO.unit)
-      ),
-      // List.empty
+      List.empty,
       List((1168.49, 0.0), (1164.69, 12.0211), (1163.38, 33.0049))
-    ) -> Cmd.None
+    ) -> Cmd.Run(streamFromServer)
   }
 
   override def subscriptions(model: Model): Sub[IO, Msg] = {

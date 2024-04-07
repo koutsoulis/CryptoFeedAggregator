@@ -2,7 +2,7 @@ ThisBuild / version := "0.1.1-SNAPSHOT"
 // ThisBuild / name := "typelevel-project"
 
 lazy val rockthejvm = "com.rockthejvm"
-lazy val scala3Version = "3.3.1"
+lazy val scala3Version = "3.4.0"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common - contains domain model
@@ -10,10 +10,14 @@ lazy val scala3Version = "3.3.1"
 
 lazy val catsEffectVersion = "3.5.3"
 lazy val http4sVersion = "0.23.25"
+lazy val http4sBlazeVersion = "0.23.16"
 lazy val http4sJDKClientVersion = "0.9.1"
 lazy val circeVersion = "0.14.0"
+lazy val jsoniterVersion = "2.28.4"
 lazy val tapirVersion = "1.9.6"
 lazy val monocleVersion = "3.2.0"
+lazy val spireVersion = "0.18.0"
+lazy val fs2Version = "3.10.2"
 
 lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(
@@ -26,13 +30,22 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
+      "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-circe" % jsoniterVersion,
+      "co.fs2" %%% "fs2-core" % fs2Version,
+      "co.fs2" %%% "fs2-scodec" % fs2Version,
       "org.gnieh" %%% "fs2-data-json" % "1.10.0",
       "org.gnieh" %%% "fs2-data-json-circe" % "1.10.0",
       "com.softwaremill.sttp.tapir" %%% "tapir-core" % tapirVersion,
       "com.softwaremill.sttp.tapir" %%% "tapir-json-circe" % tapirVersion,
       "dev.optics" %%% "monocle-core" % monocleVersion,
-      "dev.optics" %%% "monocle-macro" % monocleVersion
+      "dev.optics" %%% "monocle-macro" % monocleVersion,
+      "org.typelevel" %%% "spire" % spireVersion,
+      "io.bullet" %%% "borer-core" % "1.14.0",
+      "io.bullet" %%% "borer-derivation" % "1.14.0",
+      "io.bullet" %%% "borer-compat-scodec" % "1.14.0"
     ),
+    semanticdbEnabled := true,
+    autoAPIMappings := true,
     Compile / tpolecatExcludeOptions ++= Set(
       ScalacOptions.warnUnusedImports,
       ScalacOptions.warnUnusedPrivates,
@@ -119,12 +132,14 @@ lazy val server = (project in file("server"))
       "org.typelevel" %% "kittens" % kittensVersion,
       "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
+      "org.http4s" %% "http4s-blaze-core" % http4sBlazeVersion,
+      "org.http4s" %% "http4s-blaze-server" % http4sBlazeVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
       "org.http4s" %% "http4s-jdk-http-client" % http4sJDKClientVersion,
       "org.http4s" %% "http4s-circe" % http4sVersion,
+      "org.http4s" %% "http4s-prometheus-metrics" % "0.24.6",
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-      "io.circe" %% "circe-fs2" % circeVersion,
       "org.tpolecat" %% "doobie-core" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
       "org.tpolecat" %% "doobie-postgres" % doobieVersion,
@@ -134,7 +149,6 @@ lazy val server = (project in file("server"))
       "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       // "org.slf4j" % "slf4j-simple" % slf4jVersion,
-      "com.sun.mail" % "javax.mail" % javaMailVersion,
       "org.typelevel" %% "log4cats-noop" % log4catsVersion % Test,
       // "org.scalameta" %% "munit" % munitVersion % Test,
       // "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % "test",
@@ -152,9 +166,10 @@ lazy val server = (project in file("server"))
       "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
       "com.github.cb372" %% "cats-retry" % catsRetryVersion,
-      "org.systemfw" %% "upperbound" % "0.5.0",
       "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
     ),
+    semanticdbEnabled := true,
+    autoAPIMappings := true,
     Compile / tpolecatExcludeOptions ++= Set(
       ScalacOptions.warnUnusedImports,
       ScalacOptions.warnUnusedPrivates,
@@ -180,4 +195,4 @@ lazy val server = (project in file("server"))
 
 enablePlugins(RevolverPlugin)
 
-// mainClass in reStart := Some("com.rockthejvm.jobsboard.playground.JobsPlayground")
+mainClass in reStart := Some("Main")
