@@ -23,6 +23,7 @@ object Main extends IOApp.Simple {
       wsClient <- JdkWSClient.simple[IO].toResource
       binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
       marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
+      loggerForJRegistry <- Resource.eval(loggerFactory.fromName("loggerForJRegistry"))
       metrics <- Metrics.apply[IO]
       server <- _root_.server.Server[IO](marketDataService, metrics)
     } yield server

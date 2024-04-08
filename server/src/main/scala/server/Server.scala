@@ -78,23 +78,26 @@ object Server {
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
         val routes = HttpRoutes.of[F] { case GET -> Root / "orderbook" =>
+          val stubFD = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
           wsBuilder.build(
             sendReceive = { messagesFromClient =>
               val messagesToClient = marketDataService
-                .stream(FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC")))
+                .stream(stubFD)
                 .map(Cbor.encode(_).to[scodec.bits.ByteVector].result)
                 .map(WebSocketFrame.Binary.apply(_))
-              messagesFromClient
-                // .noneTerminate
-                // .handleErrorWith { case _ => Stream(Some(org.http4s.websocket.WebSocketFrame.Close()), None).covary }
-                // .unNoneTerminate
-                .zipRight(messagesToClient)
+
+              Stream.bracket(metrics.obGauge.inc(1, stubFD)) { _ => metrics.obGauge.dec(1, stubFD) } >>
+                messagesFromClient
+                  // .noneTerminate
+                  // .handleErrorWith { case _ => Stream(Some(org.http4s.websocket.WebSocketFrame.Close()), None).covary }
+                  // .unNoneTerminate
+                  .zipRight(messagesToClient)
             }
           )
         }
 
         HttpApp {
-          metrics.register(routes).combineK(metrics.metricsRoute).orNotFound.run
+          routes.combineK(metrics.metricsRoute).orNotFound.run
         }
       }.build
       .as(new ServerLive[F])

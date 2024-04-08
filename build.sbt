@@ -116,6 +116,7 @@ lazy val sttpClient3Version = "3.9.2"
 lazy val embeddedPostgresVersion = "2.0.6"
 lazy val catsRetryVersion = "3.1.0"
 lazy val kittensVersion = "3.2.0"
+lazy val prometheus4catsVersion = "2.0.0"
 
 import org.typelevel.scalacoptions.ScalacOptions
 
@@ -138,6 +139,8 @@ lazy val server = (project in file("server"))
       "org.http4s" %% "http4s-jdk-http-client" % http4sJDKClientVersion,
       "org.http4s" %% "http4s-circe" % http4sVersion,
       "org.http4s" %% "http4s-prometheus-metrics" % "0.24.6",
+      "com.permutive" %% "prometheus4cats" % prometheus4catsVersion,
+      "com.permutive" %% "prometheus4cats-java" % prometheus4catsVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
       "org.tpolecat" %% "doobie-core" % doobieVersion,
