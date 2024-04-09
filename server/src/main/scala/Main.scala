@@ -9,11 +9,11 @@ import pureconfig.error.ConfigReaderFailures
 import scala.util.chaining.*
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import marketData.exchange.ExchangeSpecific
-import server.metrics.Metrics
 import org.http4s.jdkhttpclient.{JdkHttpClient, JdkWSClient}
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
+import myMetrics.MyMetrics
 
 object Main extends IOApp.Simple {
   override def run: IO[Unit] = {
@@ -23,9 +23,8 @@ object Main extends IOApp.Simple {
       wsClient <- JdkWSClient.simple[IO].toResource
       binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
       marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
-      loggerForJRegistry <- Resource.eval(loggerFactory.fromName("loggerForJRegistry"))
-      metrics <- Metrics.apply[IO]
-      server <- _root_.server.Server[IO](marketDataService, metrics)
+      (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]
+      server <- _root_.server.Server[IO](marketDataService, metricsExporter, metricsRegister)
     } yield server
 
     serverResource.useForever.as(())

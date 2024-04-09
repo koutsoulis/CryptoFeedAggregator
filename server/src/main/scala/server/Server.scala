@@ -1,6 +1,5 @@
 package server
 
-import metrics.Metrics
 import cats.effect.*
 import cats.*
 import cats.data.*
@@ -27,52 +26,18 @@ import org.http4s.metrics.prometheus.PrometheusExportService
 import fs2.Stream
 // import com.comcast.ip4s.Host
 import scala.concurrent.duration.DurationInt
+import myMetrics.MyMetrics
+import names.Exchange
 
 trait Server[F[_]: Async]
 
 object Server {
   class ServerLive[F[_]](implicit F: Async[F]) extends Server[F] {}
 
-  // def apply[F[_]: Network](
-  //     marketDataService: MarketDataService[F],
-  //     metrics: Metrics[F]
-  // )(implicit F: Async[F]): Resource[F, Server[F]] = {
-  //   http4s
-  //     .ember.server.EmberServerBuilder.default[F]
-  //     .withIdleTimeout(Duration.Inf)
-  //     .withHttpWebSocketApp { wsBuilder =>
-  //       val routes = HttpRoutes.of[F] { case GET -> Root / "orderbook" =>
-  //         wsBuilder.build(
-  //           sendReceive = { messagesFromClient =>
-  //             val messagesToClient = marketDataService
-  //               .stream(FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC")))
-  //               .map(Cbor.encode(_).to[scodec.bits.ByteVector].result)
-  //               .map(WebSocketFrame.Binary.apply(_))
-  //             messagesFromClient
-  //               .noneTerminate
-  //               .handleErrorWith { case _ => Stream(Some(org.http4s.websocket.WebSocketFrame.Close()), None).covary }
-  //               .unNoneTerminate
-  //               .zipRight(messagesToClient)
-  //           }
-  //           // send = marketDataService
-  //           //   .stream(FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC")))
-  //           //   .map(Cbor.encode(_).to[scodec.bits.ByteVector].result)
-  //           //   .map(WebSocketFrame.Binary.apply(_)),
-  //           // receive = _.as(())
-  //         )
-  //       }
-
-  //       HttpApp {
-  //         metrics.register(routes).combineK(metrics.metricsRoute).orNotFound.run
-  //       }
-  //     }
-  //     .build
-  //     .as(new ServerLive[F])
-  // }
-
   def apply[F[_]: Network](
       marketDataService: MarketDataService[F],
-      metrics: Metrics[F]
+      metricsExporter: MyMetrics.Exporter[F],
+      metricsRegister: MyMetrics.Register[F]
   )(implicit F: Async[F]): Resource[F, Server[F]] = {
     http4s
       .ember.server.EmberServerBuilder.default
@@ -86,7 +51,9 @@ object Server {
                 .map(Cbor.encode(_).to[scodec.bits.ByteVector].result)
                 .map(WebSocketFrame.Binary.apply(_))
 
-              Stream.bracket(metrics.obGauge.inc(1, stubFD)) { _ => metrics.obGauge.dec(1, stubFD) } >>
+              Stream.bracket(metricsRegister.outgoingConcurrentStreams.inc(1, Exchange.Binance -> stubFD)) { _ =>
+                metricsRegister.outgoingConcurrentStreams.dec(1, Exchange.Binance -> stubFD)
+              } >>
                 messagesFromClient
                   // .noneTerminate
                   // .handleErrorWith { case _ => Stream(Some(org.http4s.websocket.WebSocketFrame.Close()), None).covary }
@@ -97,7 +64,7 @@ object Server {
         }
 
         HttpApp {
-          routes.combineK(metrics.metricsRoute).orNotFound.run
+          routes.combineK(metricsExporter.metricsRoute).orNotFound.run
         }
       }.build
       .as(new ServerLive[F])

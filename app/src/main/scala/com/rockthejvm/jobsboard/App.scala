@@ -26,6 +26,7 @@ import concurrent.duration.DurationInt
 import _root_.io.bullet.borer.Cbor
 import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
+import org.http4s.client.websocket.WSFrame
 
 object App {
   type Msg = NoOperation.type | PageManager.NavigateTo | UpdatedStatus | Model.SubscriptionDef | WSDF | UpdateSells
@@ -149,14 +150,18 @@ class App extends TyrianIOApp[Msg, Model] {
           )
         ).allocated
         .map { case (conn, cleanup) =>
-          val receiveStreamTransformed: Stream[IO, UpdateSells] = conn
-            .receiveStream
-            .map {
-              case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
-              case _ => throw new Exception("unexpected non binary ws frame")
-            }.map(_.askLevelToQuantity.toList)
-            .map(UpdateSells.apply)
-            .debounce(500.milliseconds)
+          val receiveStreamTransformed: Stream[IO, UpdateSells] =
+            Stream.repeatEval(
+              IO.println("gamisu") *>
+                conn.send(WSFrame.Text("")) <* IO.sleep(500.millis)) `zipRight`
+              conn
+                .receiveStream
+                .map {
+                  case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
+                  case _ => throw new Exception("unexpected non binary ws frame")
+                }.map(_.askLevelToQuantity.toList)
+                .map(UpdateSells.apply)
+            // .debounce(500.milliseconds)
 
           Model.SubscriptionDef("server stream", receiveStreamTransformed, cleanup)
         }
