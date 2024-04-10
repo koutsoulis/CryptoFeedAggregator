@@ -28,6 +28,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "org.http4s" %%% "http4s-client" % http4sVersion,
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-circe" % jsoniterVersion,
@@ -131,7 +132,6 @@ lazy val server = (project in file("server"))
     Defaults.itSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "kittens" % kittensVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-blaze-core" % http4sBlazeVersion,
       "org.http4s" %% "http4s-blaze-server" % http4sBlazeVersion,

@@ -27,6 +27,9 @@ import _root_.io.bullet.borer.Cbor
 import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
+import org.http4s.QueryParamEncoder
+import marketData.FeedDefinition
+import marketData.Currency
 
 object App {
   type Msg = NoOperation.type | PageManager.NavigateTo | UpdatedStatus | Model.SubscriptionDef | WSDF | UpdateSells
@@ -142,11 +145,16 @@ class App extends TyrianIOApp[Msg, Model] {
     //   // ).map(_.bodyText).flatten
     // }
 
+    val stubFD: FeedDefinition[?] = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
+
     val streamFromServer = {
       http4s
         .dom.WebSocketClient[IO].connectHighLevel(
           websocket.WSRequest(
-            uri = http4s.Uri.fromString("ws://127.0.0.1:8080/orderbook").getOrElse(None.get)
+            uri = http4s
+              .Uri.fromString("ws://127.0.0.1:8080")
+              .map(_.withQueryParam("feedName", stubFD))
+              .getOrElse(None.get)
           )
         ).allocated
         .map { case (conn, cleanup) =>

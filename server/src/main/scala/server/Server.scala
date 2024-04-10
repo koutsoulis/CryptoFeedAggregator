@@ -34,6 +34,8 @@ trait Server[F[_]: Async]
 object Server {
   class ServerLive[F[_]](implicit F: Async[F]) extends Server[F] {}
 
+  object FeedDefMatcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
+
   def apply[F[_]: Network](
       marketDataService: MarketDataService[F],
       metricsExporter: MyMetrics.Exporter[F],
@@ -42,17 +44,17 @@ object Server {
     http4s
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
-        val routes = HttpRoutes.of[F] { case GET -> Root / "orderbook" =>
-          val stubFD = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
+        val routes = HttpRoutes.of[F] { case GET -> Root :? FeedDefMatcher(feedName) =>
+          // val stubFD = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
           wsBuilder.build(
             sendReceive = { messagesFromClient =>
               val messagesToClient = marketDataService
-                .stream(stubFD)
-                .map(Cbor.encode(_).to[scodec.bits.ByteVector].result)
+                .stream(feedName)
+                .map(Cbor.encode(_)(using feedName.borerEncoderForMessage).to[scodec.bits.ByteVector].result)
                 .map(WebSocketFrame.Binary.apply(_))
 
-              Stream.bracket(metricsRegister.outgoingConcurrentStreams.inc(1, Exchange.Binance -> stubFD)) { _ =>
-                metricsRegister.outgoingConcurrentStreams.dec(1, Exchange.Binance -> stubFD)
+              Stream.bracket(metricsRegister.outgoingConcurrentStreams.inc(1, Exchange.Binance -> feedName)) { _ =>
+                metricsRegister.outgoingConcurrentStreams.dec(1, Exchange.Binance -> feedName)
               } >>
                 messagesFromClient
                   // .noneTerminate
