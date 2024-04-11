@@ -19,23 +19,20 @@ object Main extends IOApp.Simple {
   override def run: IO[Unit] = {
     implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
     val serverResource = for {
-      httpClient <- EmberClientBuilder.default[IO].build
+      httpClient <- Resource.make(IO.unit)(_ => IO.println("ember client released")) *> (EmberClientBuilder.default[IO].build)
       wsClient <- JdkWSClient.simple[IO].toResource
       binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
       marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
-      (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]
-      server <- _root_.server.Server[IO](marketDataService, metricsExporter, metricsRegister)
+      (metricsExporter, metricsRegister) <-
+        Resource.make(IO.unit)(_ => IO.println("MyMetrics service released")) *> (MyMetrics.apply[IO])
+      server <-
+        Resource
+          .make(IO.unit)(_ => IO.println("server released")) *> (_root_
+          .server.Server[IO](marketDataService, metricsExporter, metricsRegister))
     } yield server
 
+    // Resource.make(IO.unit)(_ => IO.unit).useForever
+
     serverResource.useForever.as(())
-    // (EmberClientBuilder.default[IO].build, JdkWSClient.simple[IO].toResource)
-    //   .flatMapN(
-    //     marketData
-    //       .exchange.impl.Binance.apply[IO](_, _).toResource
-    //   ).flatMap { exchangeSpecific =>
-    //     marketData.MarketDataService.apply[IO](exchangeSpecific).toResource
-    //   }.flatMap { mdService =>
-    //     _root_.server.Server[IO](mdService)
-    //   }.useForever.as(())
   }
 }

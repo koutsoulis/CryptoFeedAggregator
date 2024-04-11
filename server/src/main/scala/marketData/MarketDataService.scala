@@ -77,24 +77,26 @@ object MarketDataService {
         new MarketDataService[F] {
 
           override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
-            // TODO think generally acquisition stages should not be grouped together, but paired together with their
-            // correpsonding finalizer in a Resource, but the case below seems innocuous
-            def listenToAndPotentiallySetupBackingFeed = locks(feed).lock.surround {
-              for {
-                sfcRef <- sfc(feed)
-                currentSFC <- sfcRef.get
-                updatesFromBackingFeed <- currentSFC match {
-                  case None =>
-                    // setup  shared backing feed and register its signal and finalizer
-                    exchangeParameters
-                      .stream(feed).hold1Resource.allocated.flatTap { case (signal, finalizer) =>
-                        sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, 1)))
-                      }.map(_._1)
-                  case Some(SignalFinalizerCount(signal, finalizer, count)) =>
-                    sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count + 1))).as(signal)
-                }
-              } yield updatesFromBackingFeed.discrete
-            }
+            def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
+              locks(feed).lock.surround {
+                for {
+                  sfcRef <- sfc(feed)
+                  currentSFC <- sfcRef.get
+                  updatesFromBackingFeed <- currentSFC match {
+                    case None =>
+                      // setup shared backing feed and register its signal and finalizer
+                      poll(
+                        exchangeParameters
+                          .stream(feed).hold1Resource.allocated
+                      )
+                        .flatTap { case (signal, finalizer) =>
+                          sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, 1)))
+                        }.map(_._1)
+                    case Some(SignalFinalizerCount(signal, finalizer, count)) =>
+                      sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count + 1))).as(signal)
+                  }
+                } yield updatesFromBackingFeed.discrete
+              }
 
             def potentiallyShutdownBackingFeed = locks(feed).lock.surround {
               for {
@@ -111,10 +113,10 @@ object MarketDataService {
             }
 
             Stream
-              .bracket(
+              .bracketFull(
                 acquire = listenToAndPotentiallySetupBackingFeed
               )(
-                release = _ => potentiallyShutdownBackingFeed
+                release = (_, _) => potentiallyShutdownBackingFeed
               ).flatten
           }
         }
