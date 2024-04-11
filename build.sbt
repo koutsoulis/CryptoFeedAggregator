@@ -43,7 +43,8 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
       "org.typelevel" %%% "spire" % spireVersion,
       "io.bullet" %%% "borer-core" % "1.14.0",
       "io.bullet" %%% "borer-derivation" % "1.14.0",
-      "io.bullet" %%% "borer-compat-scodec" % "1.14.0"
+      "io.bullet" %%% "borer-compat-scodec" % "1.14.0",
+      "org.typelevel" %%% "mouse" % "1.2.3"
     ),
     semanticdbEnabled := true,
     autoAPIMappings := true,
