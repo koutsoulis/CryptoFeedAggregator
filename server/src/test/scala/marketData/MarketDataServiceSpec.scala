@@ -5,7 +5,6 @@ import cats.effect.*
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
-import marketData.backingStreams.BackingStreamsService
 import fs2.Stream
 import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition.Stub

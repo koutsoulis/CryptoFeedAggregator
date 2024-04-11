@@ -29,7 +29,7 @@ trait MarketDataService[F[_]] {
 
 object MarketDataService {
 
-  def apply[F[_]](exchangeParameters: ExchangeSpecific[F])(using F: Async[F]): F[MarketDataService[F]] = {
+  def apply[F[_]](exchangeSpecific: ExchangeSpecific[F])(using F: Async[F]): F[MarketDataService[F]] = {
 
     /**
      * Triple containing what we need to share a data feed among multiple subscribers.
@@ -47,12 +47,12 @@ object MarketDataService {
         subscribersCount: Int
     )
 
-    val locks: F[Map[FeedDefinition[?], Mutex[F]]] = exchangeParameters
+    val locks: F[Map[FeedDefinition[?], Mutex[F]]] = exchangeSpecific
       .allFeedDefs.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
-    val initSFCs: F[Map[FeedDefinition[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeParameters
+    val initSFCs: F[Map[FeedDefinition[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeSpecific
       .allFeedDefs.traverse { feedDef =>
         Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
       }.map(_.toMap)
@@ -61,7 +61,7 @@ object MarketDataService {
       F.delay {
         TrieMap
           .from[FeedDefinition[?], Int](
-            exchangeParameters.allFeedDefs.map { _ -> 0 }
+            exchangeSpecific.allFeedDefs.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
 
@@ -86,7 +86,7 @@ object MarketDataService {
                     case None =>
                       // setup shared backing feed and register its signal and finalizer
                       poll(
-                        exchangeParameters
+                        exchangeSpecific
                           .stream(feed).hold1Resource.allocated
                       )
                         .flatTap { case (signal, finalizer) =>
