@@ -34,8 +34,6 @@ trait Server[F[_]: Async]
 object Server {
   class ServerLive[F[_]](implicit F: Async[F]) extends Server[F] {}
 
-  object FeedDefMatcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
-
   def apply[F[_]: Network](
       marketDataService: MarketDataService[F],
       metricsExporter: MyMetrics.Exporter[F],
@@ -44,8 +42,7 @@ object Server {
     http4s
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
-        val routes = HttpRoutes.of[F] { case GET -> Root :? FeedDefMatcher(feedName) =>
-          // val stubFD = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
+        val routes = HttpRoutes.of[F] { case GET -> Root :? FeedDefinition.Matcher(feedName) =>
           wsBuilder.build(
             sendReceive = { messagesFromClient =>
               val messagesToClient = marketDataService
@@ -57,9 +54,6 @@ object Server {
                 metricsRegister.outgoingConcurrentStreams.dec(1, Exchange.Binance -> feedName)
               } >>
                 messagesFromClient
-                  // .noneTerminate
-                  // .handleErrorWith { case _ => Stream(Some(org.http4s.websocket.WebSocketFrame.Close()), None).covary }
-                  // .unNoneTerminate
                   .zipRight(messagesToClient)
             }
           )

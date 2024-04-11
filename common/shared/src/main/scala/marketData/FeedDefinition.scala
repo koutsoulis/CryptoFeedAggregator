@@ -32,16 +32,11 @@ sealed trait FeedDefinition[M: borer.Encoder: borer.Decoder] {
   def borerEncoderForMessage: borer.Encoder[M] = summon[borer.Encoder[M]]
 
   def borerDecoderForMessage: borer.Decoder[M] = summon[borer.Decoder[M]]
-
-  // given borer.Codec[M] = borer.Codec.of
-  // given borer.Codec[M] = summon[borer.Codec[M]]
 }
 
 object FeedDefinition {
   case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedDefinition[Orderbook] {
     override def parametersStringForPrometheusLabelValue: String = currency1.name ++ currency2.name
-
-    // override val borerCodecForMessage = implicitly[borer.Codec[Orderbook]]
   }
 
   case class Stub(_value: Boolean = false) extends FeedDefinition[Stub.Message] {
@@ -52,13 +47,10 @@ object FeedDefinition {
     case class Message(value: Int) derives borer.Codec
   }
 
-  // implicit val circeDecoder: circe.Decoder[FeedDefinition[?]] = List[circe.Decoder[FeedDefinition[?]]](
-  //   circe.Decoder[OrderbookFeed].widen
-  // ).reduceLeft(_ or _)
+  given http4s.QueryParamCodec[marketData.FeedDefinition[?]] = {
 
-  given borer.Codec[FeedDefinition[?]] = deriveAllCodecs[FeedDefinition[?]]
+    given borer.Codec[FeedDefinition[?]] = deriveAllCodecs[FeedDefinition[?]]
 
-  given http4s.QueryParamCodec[marketData.FeedDefinition[?]] =
     http4s
       .QueryParamCodec.from(
         decodeA = http4s
@@ -71,16 +63,12 @@ object FeedDefinition {
               }
           },
         encodeA = http4s.QueryParamEncoder.stringQueryParamEncoder.contramap { feedDef =>
-          // implicit val asd: scodec.Encoder[FeedDefinition[?]] = ???
-          // scodec.Encoder.encode(feedDef).require.toBase64Url
-          // ???
           borer.Cbor.encode(feedDef).to[ByteVector].result.toBase64Url
         }
       )
+  }
 
-  // implicit val cborDecoder: borer.Decoder[FeedDefinition[?]] = borer.Decoder
-
-  // object FeedDefinitionQueryParamDecoderMatcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedDefinition")
+  object Matcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
 }
 
 case class Currency(name: String) derives borer.Codec
