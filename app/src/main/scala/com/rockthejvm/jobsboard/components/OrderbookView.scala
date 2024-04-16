@@ -4,11 +4,15 @@ import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
 import tyrian.*
 import tyrian.Html.*
+import marketData.exchange.impl.binance.domain.Orderbook
 
 object OrderbookView {
-  def view(model: Model): Html[Msg] =
+  def view(ob: Orderbook): Html[Msg] =
     div {
-      val maxVolume = model.sells.map(_._2).max
+      val asks = ob.askLevelToQuantity.toList
+      val bids = ob.bidLevelToQuantity.toList
+      val maxAsksVolume = asks.map(_._2).max
+      val maxBidsVolume = bids.map(_._2).max
 
       def outerRow(elems: List[tyrian.Elem[Msg]]): tyrian.Html[Msg] = div(
         style(
@@ -37,7 +41,7 @@ object OrderbookView {
         )
       )(text)
 
-      def percentageBar(width: BigDecimal): tyrian.Html[Msg] = div(
+      def percentageBar(width: BigDecimal, color: "green" | "red"): tyrian.Html[Msg] = div(
         style(
           CSS.`background-color`("green") |+|
             CSS.height("100%") |+|
@@ -47,10 +51,10 @@ object OrderbookView {
         )
       )("")
 
-      val rows: List[tyrian.Html[Msg]] = model.sells.map { case (price, volume) =>
+      val bidRows: List[tyrian.Html[Msg]] = bids.map { case (price, volume) =>
         outerRow(
           List(
-            percentageBar(volume * 100 / maxVolume),
+            percentageBar(width = volume * 100 / maxBidsVolume, color = "green"),
             row(
               List(
                 cell(price.toString),
@@ -60,12 +64,27 @@ object OrderbookView {
           )
         )
       }
+
+      val askRows = asks.map { case (price, volume) =>
+        outerRow(
+          List(
+            percentageBar(width = volume * 100 / maxAsksVolume, color = "red"),
+            row(
+              List(
+                cell(price.toString),
+                cell(volume.toString)
+              )
+            )
+          )
+        )
+      }
+
       div(style(CSS.display("flex")))(
         div(style(CSS.flex("1")))(
-          children = rows: List[tyrian.Html[Msg]]
+          children = bidRows: List[tyrian.Html[Msg]]
         ),
         div(style(CSS.flex("1")))(
-          children = rows: List[tyrian.Html[Msg]]
+          children = askRows: List[tyrian.Html[Msg]]
         )
       )
     }

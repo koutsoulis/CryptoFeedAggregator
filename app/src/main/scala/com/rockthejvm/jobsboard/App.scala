@@ -36,19 +36,17 @@ import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition.Stub
 
 object App {
-  type Msg = NoOperation.type | Displayable | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?]
+  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?]
 
   object NoOperation
 
   case class Model(
       selection: MarketFeedSelectionStage2,
       subscriptionDef: Sub[IO, Msg],
-      sells: List[(BigDecimal, BigDecimal)]
+      sells: List[(BigDecimal, BigDecimal)],
+      orderbook: Option[Orderbook]
   )
 
-  case class UpdateSells(sells: List[(BigDecimal, BigDecimal)])
-
-  case class Displayable(value: Orderbook | FeedDefinition.Stub.Message)
 }
 
 import App.*
@@ -93,29 +91,17 @@ class App extends TyrianIOApp[Msg, Model] {
         tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USD"))))
       ),
       Sub.None,
-      List((1168.49, 0.0), (1164.69, 12.0211), (1163.38, 33.0049))
+      List((1168.49, 0.0), (1164.69, 12.0211), (1163.38, 33.0049)),
+      orderbook = None
     ) -> Cmd.None
   }
 
-  override def subscriptions(model: Model): Sub[IO, Msg] = {
-    // val subDefs = model
-    //   .subscriptionDefs.map { subDef =>
-    //     Sub.make(subDef.name)(subDef.stream)(subDef.cleanup)
-    //   }
-
-    // val pf: PartialFunction[MarketFeedSelectionStage2, (names.Exchange, FeedDefinition[?])] = {
-    //   case MarketFeedSelectionStage2.TotalSelection(_, exchange, feedName) => (exchange, feedName)
-    // }
-
-    // pf.lift(model.selection)
-
-    model.subscriptionDef
-  }
+  override def subscriptions(model: Model): Sub[IO, Msg] = model.subscriptionDef
 
   override def view(model: Model): Html[Msg] =
     div(
-      model.selection.view,
-      OrderbookView.view(model)
+      List(model.selection.view) ++
+        model.orderbook.map(OrderbookView.view)
     )
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { msg =>
@@ -126,35 +112,20 @@ class App extends TyrianIOApp[Msg, Model] {
       case subDef: Sub[IO, Msg] =>
         model.copy(subscriptionDef = subDef) -> Cmd.None
 
-      // case UpdateSells(sellsNew) =>
-      //   model.focus(_.sells).replace(sellsNew) -> Cmd.None
-
-      // case Displayable(displayable) =>
-      //   displayable match {
-      //     case ob: Orderbook => model.focus(_.sells).replace(ob.askLevelToQuantity.toList) -> Cmd.None
-      //     case _ => throw Exception("shouldve been Orderbook")
-      //   }
-
-      case ob: Orderbook => model.focus(_.sells).replace(ob.askLevelToQuantity.toList) -> Cmd.None
+      case ob: Orderbook => model.focus(_.orderbook).replace(Some(ob)) -> Cmd.None
 
       case selection: MarketFeedSelectionStage2 =>
-        val cmd: Sub[IO, Orderbook] = Option(selection)
+        val sub: Sub[IO, Orderbook] = Option(selection)
           .collect { case ts: TotalSelection => ts.feedName }
           .map {
             case obf: OrderbookFeed => components.StreamFromServer.stream(obf)
             case Stub(_value) => Sub.None
           }.getOrElse(Sub.None)
 
-        // val cmd = selection match {
-        //   case selection: TotalSelection =>
-        //     Cmd.Run(
-        //       components
-        //         .StreamFromServer.stream(selection.feedName)
-        //     )
-        //   case _ => Cmd.None
-        // }
-
-        model.focus(_.selection).replace(selection) -> Cmd.Emit(cmd)
+        model
+          .focus(_.selection).replace(selection)
+          .focus(_.orderbook).replace(None)
+          -> Cmd.Emit(sub)
 
     newModel -> nextMsg
   }
