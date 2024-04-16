@@ -47,7 +47,7 @@ object FeedDefinition {
     case class Message(value: Int) derives borer.Codec
   }
 
-  given http4s.QueryParamCodec[marketData.FeedDefinition[?]] = {
+  implicit val qpmC: http4s.QueryParamCodec[marketData.FeedDefinition[?]] = {
 
     given borer.Codec[FeedDefinition[?]] = deriveAllCodecs[FeedDefinition[?]]
 
@@ -67,6 +67,8 @@ object FeedDefinition {
         }
       )
   }
+
+  // given queryEncoder: http4s.QueryParamEncoder[marketData.FeedDefinition[?]] = http4s.QueryParamEncoder.fromCodec
 
   object Matcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
 }

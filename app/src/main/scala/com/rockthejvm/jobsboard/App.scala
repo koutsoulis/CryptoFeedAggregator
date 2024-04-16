@@ -1,14 +1,12 @@
 package com.rockthejvm.jobsboard
 
 import scala.scalajs.js.annotation.*
-import tyrian.*
 
 import tyrian.CSS.*
 import tyrian.*
 import tyrian.Html.*
 
 import cats.effect.*
-import core.PageManager
 import org.http4s
 import org.http4s.client.websocket
 import org.http4s.client.websocket.WSDataFrame
@@ -26,23 +24,31 @@ import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
 import marketData.FeedDefinition
 import marketData.Currency
+import com.rockthejvm.jobsboard.components.OrderbookView
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectExchange
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectFeed
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency1
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency2
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.TotalSelection
+import _root_.io.bullet.borer
+import marketData.FeedDefinition.OrderbookFeed
+import marketData.FeedDefinition.Stub
 
 object App {
-  type Msg = NoOperation.type | Model.SubscriptionDef | UpdateSells
+  type Msg = NoOperation.type | Displayable | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?]
 
   object NoOperation
 
   case class Model(
-      displayStatus: String,
-      subscriptionDefs: List[Model.SubscriptionDef],
+      selection: MarketFeedSelectionStage2,
+      subscriptionDef: Sub[IO, Msg],
       sells: List[(BigDecimal, BigDecimal)]
   )
 
   case class UpdateSells(sells: List[(BigDecimal, BigDecimal)])
 
-  object Model {
-    case class SubscriptionDef(name: String, stream: fs2.Stream[IO, Msg], cleanup: IO[Unit])
-  }
+  case class Displayable(value: Orderbook | FeedDefinition.Stub.Message)
 }
 
 import App.*
@@ -56,120 +62,99 @@ class App extends TyrianIOApp[Msg, Model] {
 
     val stubFD: FeedDefinition[?] = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
 
-    val streamFromServer = {
-      http4s
-        .dom.WebSocketClient[IO].connectHighLevel(
-          websocket.WSRequest(
-            uri = http4s
-              .Uri.fromString("ws://127.0.0.1:8080")
-              .map(_.withQueryParam("feedName", stubFD))
-              .getOrElse(None.get)
-          )
-        ).allocated
-        .map { case (conn, cleanup) =>
-          val receiveStreamTransformed: Stream[IO, UpdateSells] =
-            Stream.repeatEval(conn.send(WSFrame.Text("")) <* IO.sleep(500.millis)) `zipRight`
-              conn
-                .receiveStream
-                .map {
-                  case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
-                  case _ => throw new Exception("unexpected non binary ws frame")
-                }.map(_.askLevelToQuantity.toList)
-                .map(UpdateSells.apply)
+    // val streamFromServer = {
+    //   http4s
+    //     .dom.WebSocketClient[IO].connectHighLevel(
+    //       websocket.WSRequest(
+    //         uri = http4s
+    //           .Uri.fromString("ws://127.0.0.1:8080")
+    //           .map(_.withQueryParam("feedName", stubFD))
+    //           .getOrElse(None.get)
+    //       )
+    //     ).allocated
+    //     .map { case (conn, cleanup) =>
+    //       val receiveStreamTransformed: Stream[IO, UpdateSells] =
+    //         Stream.repeatEval(conn.send(WSFrame.Text("")) <* IO.sleep(500.millis)) `zipRight`
+    //           conn
+    //             .receiveStream
+    //             .map {
+    //               case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
+    //               case _ => throw new Exception("unexpected non binary ws frame")
+    //             }.map(_.askLevelToQuantity.toList)
+    //             .map(UpdateSells.apply)
 
-          Model.SubscriptionDef("server stream", receiveStreamTransformed, cleanup)
-        }
-    }
+    //       Model.SubscriptionDef("server stream", receiveStreamTransformed, cleanup)
+    //     }
+    // }
 
     Model(
-      "",
-      List.empty,
+      selection = MarketFeedSelectionStage2.SelectExchange(
+        alreadySelected = None,
+        tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USD"))))
+      ),
+      Sub.None,
       List((1168.49, 0.0), (1164.69, 12.0211), (1163.38, 33.0049))
-    ) -> Cmd.Run(streamFromServer)
+    ) -> Cmd.None
   }
 
   override def subscriptions(model: Model): Sub[IO, Msg] = {
-    val subDefs = model
-      .subscriptionDefs.map { subDef =>
-        Sub.make(subDef.name)(subDef.stream)(subDef.cleanup)
-      }
+    // val subDefs = model
+    //   .subscriptionDefs.map { subDef =>
+    //     Sub.make(subDef.name)(subDef.stream)(subDef.cleanup)
+    //   }
 
-    Sub.combineAll(subDefs)
+    // val pf: PartialFunction[MarketFeedSelectionStage2, (names.Exchange, FeedDefinition[?])] = {
+    //   case MarketFeedSelectionStage2.TotalSelection(_, exchange, feedName) => (exchange, feedName)
+    // }
+
+    // pf.lift(model.selection)
+
+    model.subscriptionDef
   }
 
   override def view(model: Model): Html[Msg] =
-    div {
-      val maxVolume = model.sells.map(_._2).max
-
-      def outerRow(elems: List[tyrian.Elem[Msg]]): tyrian.Html[Msg] = div(
-        style(
-          CSS.height("30px") |+|
-            CSS.width("100%") |+|
-            CSS.position("relative")
-        )
-      )(elems)
-
-      def row(elems: List[tyrian.Elem[Msg]]): tyrian.Html[Msg] = div(
-        style(
-          CSS.display("flex") |+|
-            CSS.position("absolute") |+|
-            CSS.width("100%") |+|
-            CSS.top("0")
-        )
-      )(elems)
-
-      def cell(text: String): tyrian.Html[Msg] = div(
-        style(
-          CSS.`flex-grow`("1") |+|
-            CSS.display("flex") |+|
-            CSS.`justify-content`("center") |+|
-            CSS.`align-items`("center") |+|
-            CSS.color("black")
-        )
-      )(text)
-
-      def percentageBar(width: BigDecimal): tyrian.Html[Msg] = div(
-        style(
-          CSS.`background-color`("green") |+|
-            CSS.height("100%") |+|
-            CSS.position("absolute") |+|
-            CSS.right("0") |+|
-            CSS.width(s"$width%")
-        )
-      )("")
-
-      val rows: List[tyrian.Html[Msg]] = model.sells.map { case (price, volume) =>
-        outerRow(
-          List(
-            percentageBar(volume * 100 / maxVolume),
-            row(
-              List(
-                cell(price.toString),
-                cell(volume.toString)
-              )
-            )
-          )
-        )
-      }
-      div(style(CSS.display("flex")))(
-        div(style(CSS.flex("1")))(
-          children = rows: List[tyrian.Html[Msg]]
-        ),
-        div(style(CSS.flex("1")))(
-          children = rows: List[tyrian.Html[Msg]]
-        )
-      )
-    }
+    div(
+      model.selection.view,
+      OrderbookView.view(model)
+    )
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { msg =>
     val (newModel, nextMsg) = msg match
       case NoOperation => model -> Cmd.None
 
-      case subDef: Model.SubscriptionDef =>
-        model.copy(subscriptionDefs = model.subscriptionDefs.prepended(subDef)) -> Cmd.None
+      // TODO replace Msg -> Orderbook | etc (define type alias for union)
+      case subDef: Sub[IO, Msg] =>
+        model.copy(subscriptionDef = subDef) -> Cmd.None
 
-      case UpdateSells(sellsNew) =>
-        model.focus(_.sells).replace(sellsNew) -> Cmd.None
+      // case UpdateSells(sellsNew) =>
+      //   model.focus(_.sells).replace(sellsNew) -> Cmd.None
+
+      // case Displayable(displayable) =>
+      //   displayable match {
+      //     case ob: Orderbook => model.focus(_.sells).replace(ob.askLevelToQuantity.toList) -> Cmd.None
+      //     case _ => throw Exception("shouldve been Orderbook")
+      //   }
+
+      case ob: Orderbook => model.focus(_.sells).replace(ob.askLevelToQuantity.toList) -> Cmd.None
+
+      case selection: MarketFeedSelectionStage2 =>
+        val cmd: Sub[IO, Orderbook] = Option(selection)
+          .collect { case ts: TotalSelection => ts.feedName }
+          .map {
+            case obf: OrderbookFeed => components.StreamFromServer.stream(obf)
+            case Stub(_value) => Sub.None
+          }.getOrElse(Sub.None)
+
+        // val cmd = selection match {
+        //   case selection: TotalSelection =>
+        //     Cmd.Run(
+        //       components
+        //         .StreamFromServer.stream(selection.feedName)
+        //     )
+        //   case _ => Cmd.None
+        // }
+
+        model.focus(_.selection).replace(selection) -> Cmd.Emit(cmd)
 
     newModel -> nextMsg
   }

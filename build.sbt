@@ -67,7 +67,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
 // Frontend
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-lazy val tyrianVersion = "0.10.0"
+lazy val tyrianVersion = "0.11.0"
 lazy val fs2DomVersion = "0.1.0"
 lazy val laikaVersion = "0.19.0"
 

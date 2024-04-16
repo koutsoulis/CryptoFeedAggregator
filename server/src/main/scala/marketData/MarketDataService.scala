@@ -29,6 +29,14 @@ trait MarketDataService[F[_]] {
 
 object MarketDataService {
 
+  /**
+   * Responsible for managing the lifecycle of the backing feeds. Avoids over-provisioning when multiple users request the same feed.
+   *
+   * @param exchangeSpecific
+   *   provides the backing feed from the Exchange
+   * @param F
+   * @return
+   */
   def apply[F[_]](exchangeSpecific: ExchangeSpecific[F])(using F: Async[F]): F[MarketDataService[F]] = {
 
     /**
