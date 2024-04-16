@@ -10,6 +10,7 @@ import monocle.syntax.all.*
 import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectFeed.FeedName
+import scala.util.Try
 
 // sealed trait MarketFeedSelectionStage2 {
 //   def view(model: Model): Html[Msg]
@@ -35,24 +36,26 @@ object MarketFeedSelectionStage2 {
   case class SelectExchange(alreadySelected: Option[Exchange], tradePairs: Map[names.Exchange, Map[Currency, Set[Currency]]])
       extends MarketFeedSelectionStage2 {
     override def selectsBackingView: List[Html[Msg]] = List {
-      val exchanges: Set[Exchange] = tradePairs.keySet
-      val preselectedOption: String = alreadySelected.map(_.toString).getOrElse("No Exchange selected")
-      val otherOptions: List[String] = (exchanges -- alreadySelected).map(_.toString).toList
-      val allOptions: List[Html[Msg]] =
-        otherOptions
+      val options: List[Html[Msg]] =
+        tradePairs
+          .keySet.map(_.toString).toList.prepended("No Exchange selected")
           .map(tyrian.Html.option[Msg](_))
-          .prepended(tyrian.Html.option[Msg](tyrian.Property("selected", true))(preselectedOption))
 
       select(
         onInput { value =>
-          val selectedExchange = Exchange.valueOf(value)
-          SelectFeed(
-            previousStep = this.focus(_.alreadySelected).replace(Some(selectedExchange)),
-            exchangeSelected = selectedExchange,
-            tradePairs = tradePairs.get(selectedExchange).get
-          )
+          Try(Exchange.valueOf(value))
+            .toOption.fold(
+              ifEmpty = this
+            ) { selectedExchange =>
+              SelectFeed(
+                previousStep = this.focus(_.alreadySelected).replace(Some(selectedExchange)),
+                exchangeSelected = selectedExchange,
+                tradePairs = tradePairs.get(selectedExchange).get
+              )
+            }
+
         }
-      )(allOptions)
+      )(options)
     }
   }
 
