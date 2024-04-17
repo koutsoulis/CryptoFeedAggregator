@@ -28,7 +28,8 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "org.http4s" %%% "http4s-client" % http4sVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %%% "http4s-dsl" % http4sVersion,
+      "org.http4s" %%% "http4s-circe" % http4sVersion,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
       "com.github.plokhotnyuk.jsoniter-scala" %%% "jsoniter-scala-circe" % jsoniterVersion,
@@ -138,7 +139,6 @@ lazy val server = (project in file("server"))
       "org.http4s" %% "http4s-blaze-server" % http4sBlazeVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
       "org.http4s" %% "http4s-jdk-http-client" % http4sJDKClientVersion,
-      "org.http4s" %% "http4s-circe" % http4sVersion,
       "org.http4s" %% "http4s-prometheus-metrics" % "0.24.6",
       "com.permutive" %% "prometheus4cats" % prometheus4catsVersion,
       "com.permutive" %% "prometheus4cats-java" % prometheus4catsVersion,

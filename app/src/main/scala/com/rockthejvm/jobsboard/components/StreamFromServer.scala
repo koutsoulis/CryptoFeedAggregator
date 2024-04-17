@@ -32,16 +32,17 @@ import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.TotalSelect
 import _root_.io.bullet.borer
 import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
+import names.Exchange
 
 object StreamFromServer {
-  def stream[M <: Msg](feedName: FeedDefinition[M]): Sub[IO, M] = {
+  def stream[M <: Msg](exchange: Exchange, feedName: FeedDefinition[M]): Sub[IO, M] = {
     val undelyingStream: Stream[IO, M] = Stream
       .resource(
         http4s
           .dom.WebSocketClient[IO].connectHighLevel(
             websocket.WSRequest(
               uri = http4s
-                .Uri.fromString("ws://127.0.0.1:8080")
+                .Uri.fromString(s"ws://127.0.0.1:8080/${exchange.toString}")
                 .map(_.withQueryParam("feedName", feedName: FeedDefinition[?]))
                 .getOrElse(None.get)
             )

@@ -2,9 +2,11 @@ package marketData.exchange.impl.binance.dto
 
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
+import marketData.Currency
 
 final case class ExchangeInfo(
-    rateLimits: List[ExchangeInfo.RateLimit]
+    rateLimits: List[ExchangeInfo.RateLimit],
+    symbols: List[ExchangeInfo.SymbolPair]
 ) derives circe.Decoder
 
 object ExchangeInfo {
@@ -43,6 +45,26 @@ object ExchangeInfo {
         case "DAY" => Right(DAY)
         case string => Left(s"unknown binance ratelimit interval type: $string")
       }
+    }
+  }
+
+  final case class SymbolPair(
+      status: SymbolPair.Status,
+      baseAsset: String,
+      quoteAsset: String
+  ) derives circe.Decoder {
+    def baseAssetCurrency: Currency = Currency(baseAsset)
+    def quoteAssetCurrency: Currency = Currency(quoteAsset)
+  }
+
+  object SymbolPair {
+    enum Status {
+      case TRADING, Ignore
+    }
+
+    given circe.Decoder[Status] = circe.Decoder[String].map {
+      case "TRADING" => Status.TRADING
+      case _ => Status.Ignore
     }
   }
 }

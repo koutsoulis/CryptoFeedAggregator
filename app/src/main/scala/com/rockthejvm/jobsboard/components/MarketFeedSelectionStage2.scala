@@ -33,8 +33,7 @@ sealed trait MarketFeedSelectionStage2 {
 
 object MarketFeedSelectionStage2 {
 
-  case class SelectExchange(alreadySelected: Option[Exchange], tradePairs: Map[names.Exchange, Map[Currency, Set[Currency]]])
-      extends MarketFeedSelectionStage2 {
+  case class SelectExchange(tradePairs: Map[names.Exchange, Map[Currency, Set[Currency]]]) extends MarketFeedSelectionStage2 {
     override def selectsBackingView: List[Html[Msg]] = List {
       val options: List[Html[Msg]] =
         tradePairs
@@ -48,7 +47,7 @@ object MarketFeedSelectionStage2 {
               ifEmpty = this
             ) { selectedExchange =>
               SelectFeed(
-                previousStep = this.focus(_.alreadySelected).replace(Some(selectedExchange)),
+                previousStep = this,
                 exchangeSelected = selectedExchange,
                 tradePairs = tradePairs.get(selectedExchange).get
               )

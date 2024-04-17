@@ -9,6 +9,7 @@ import cats.*
 import cats.data.*
 import cats.syntax.all.*
 import myMetrics.MyMetrics
+import names.Exchange
 
 object Main extends IOApp.Simple {
   override def run: IO[Unit] = {
@@ -18,8 +19,9 @@ object Main extends IOApp.Simple {
       wsClient <- JdkWSClient.simple[IO].toResource
       binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
       marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
+      marketDataServiceByExchange = Map(Exchange.Binance -> marketDataService)
       (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]
-      server <- _root_.server.Server[IO](marketDataService, metricsExporter, metricsRegister)
+      server <- _root_.server.Server[IO](marketDataServiceByExchange, metricsExporter, metricsRegister)
     } yield server
 
     serverResource.useForever.as(())

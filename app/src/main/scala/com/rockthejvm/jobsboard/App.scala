@@ -7,6 +7,10 @@ import tyrian.*
 import tyrian.Html.*
 
 import cats.effect.*
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import mouse.all.*
 import org.http4s
 import org.http4s.client.websocket
 import org.http4s.client.websocket.WSDataFrame
@@ -34,19 +38,21 @@ import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.TotalSelect
 import _root_.io.bullet.borer
 import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition.Stub
+import names.Exchange
+import org.http4s.circe.CirceEntityCodec.*
 
 object App {
-  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?]
+  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?] | InitTradePairs
 
   object NoOperation
+
+  case class InitTradePairs(tradePairs: Map[Exchange, Map[Currency, Set[Currency]]])
 
   case class Model(
       selection: MarketFeedSelectionStage2,
       subscriptionDef: Sub[IO, Msg],
-      sells: List[(BigDecimal, BigDecimal)],
       orderbook: Option[Orderbook]
   )
-
 }
 
 import App.*
@@ -60,40 +66,28 @@ class App extends TyrianIOApp[Msg, Model] {
 
     val stubFD: FeedDefinition[?] = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
 
-    // val streamFromServer = {
-    //   http4s
-    //     .dom.WebSocketClient[IO].connectHighLevel(
-    //       websocket.WSRequest(
-    //         uri = http4s
-    //           .Uri.fromString("ws://127.0.0.1:8080")
-    //           .map(_.withQueryParam("feedName", stubFD))
-    //           .getOrElse(None.get)
-    //       )
-    //     ).allocated
-    //     .map { case (conn, cleanup) =>
-    //       val receiveStreamTransformed: Stream[IO, UpdateSells] =
-    //         Stream.repeatEval(conn.send(WSFrame.Text("")) <* IO.sleep(500.millis)) `zipRight`
-    //           conn
-    //             .receiveStream
-    //             .map {
-    //               case Binary(data, _) => Cbor.decode(data).to[Orderbook].value
-    //               case _ => throw new Exception("unexpected non binary ws frame")
-    //             }.map(_.askLevelToQuantity.toList)
-    //             .map(UpdateSells.apply)
+    val client = http4s.dom.FetchClientBuilder[IO].create
 
-    //       Model.SubscriptionDef("server stream", receiveStreamTransformed, cleanup)
-    //     }
-    // }
+    def allPairs(exchange: Exchange): IO[Map[Currency, Set[Currency]]] = client
+      .expect[List[(Currency, Currency)]](
+        uri = http4s
+          .Uri.fromString(s"http://127.0.0.1:8080/${exchange.toString}/allCurrencyPairs")
+          .getOrElse(None.get)
+      ).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
+
+    val allPairsPerExchange: IO[Map[Exchange, Map[Currency, Set[Currency]]]] = Exchange
+      .values.toList.map { exchange => allPairs(exchange).map(exchange -> _) }
+      .sequence
+      .map(_.toMap)
 
     Model(
       selection = MarketFeedSelectionStage2.SelectExchange(
-        alreadySelected = None,
-        tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USD"))))
+        tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USDT"))))
+        // tradePairs = Map.empty
       ),
       Sub.None,
-      List((1168.49, 0.0), (1164.69, 12.0211), (1163.38, 33.0049)),
       orderbook = None
-    ) -> Cmd.None
+    ) -> Cmd.Run(allPairsPerExchange.map(InitTradePairs.apply))
   }
 
   override def subscriptions(model: Model): Sub[IO, Msg] = model.subscriptionDef
@@ -108,6 +102,14 @@ class App extends TyrianIOApp[Msg, Model] {
     val (newModel, nextMsg) = msg match
       case NoOperation => model -> Cmd.None
 
+      case InitTradePairs(tradePairs) =>
+        model
+          .focus(_.selection).replace(
+            MarketFeedSelectionStage2.SelectExchange(
+              tradePairs = tradePairs
+            )
+          ) -> Cmd.None
+
       // TODO replace Msg -> Orderbook | etc (define type alias for union)
       case subDef: Sub[IO, Msg] =>
         model.copy(subscriptionDef = subDef) -> Cmd.None
@@ -116,10 +118,12 @@ class App extends TyrianIOApp[Msg, Model] {
 
       case selection: MarketFeedSelectionStage2 =>
         val sub: Sub[IO, Orderbook] = Option(selection)
-          .collect { case ts: TotalSelection => ts.feedName }
-          .map {
-            case obf: OrderbookFeed => components.StreamFromServer.stream(obf)
-            case Stub(_value) => Sub.None
+          .collect { case ts: TotalSelection => ts.feedName -> ts.exchangeSelected }
+          .map { case (feedName, exchange) =>
+            feedName match {
+              case feedName: OrderbookFeed => components.StreamFromServer.stream(exchange, feedName)
+              case Stub(_) => Sub.None
+            }
           }.getOrElse(Sub.None)
 
         model

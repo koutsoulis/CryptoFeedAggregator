@@ -73,4 +73,4 @@ object FeedDefinition {
   object Matcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
 }
 
-case class Currency(name: String) derives borer.Codec
+case class Currency(name: String) derives borer.Codec, circe.Codec.AsObject

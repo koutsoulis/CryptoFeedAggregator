@@ -27,17 +27,13 @@ import org.http4s.client.websocket.WSFrame.Text
 import org.http4s.client.websocket.WSFrame.Binary
 import _root_.io.circe
 import marketData.exchange.impl.binance.domain.{OrderbookUpdate, Orderbook, RateLimits}
+import binance.dto.ExchangeInfo.SymbolPair.Status
 
-class Binance[F[_]] private (
+trait Binance[F[_]] private (
     client2: binance.Client[F]
 )(
     implicit F: Async[F]
 ) extends ExchangeSpecific[F] {
-
-  override def allCurrencyPairs: List[(Currency, Currency)] = List(
-    Currency("BTC") -> Currency("ETH"),
-    Currency("ETH") -> Currency("BTC")
-  )
 
   override def stream[M](feedDef: FeedDefinition[M]): Stream[F, M] = feedDef match {
     case orderbookFeedDef: FeedDefinition.OrderbookFeed => orderbookStream(orderbookFeedDef)
@@ -87,9 +83,9 @@ object Binance {
       using F: Async[F]
   ): F[Binance[F]] = {
     for {
-      RateLimits(requestWeight, _) <- http4sHttpClient
+      exchangeInfo <- http4sHttpClient
         .expect[dto.ExchangeInfo](baseEndpoint.addPath("api/v3/exchangeInfo"))
-        .map(RateLimits.of).rethrow
+      RateLimits(requestWeight, _) <- F.fromEither(RateLimits.of(exchangeInfo))
 
       httpRateLimitSem <- Semaphore(requestWeight.permitsAvailable - exchangeInfoRequestWeight)
       wsConnectionRateLimitSem <- Semaphore(wsConnectionPermits)
@@ -111,6 +107,12 @@ object Binance {
               releaseTime = wsConnectionPermitReleaseTime
             )
         )
-    } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient))
+    } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient)) {
+      override def allCurrencyPairs: List[(Currency, Currency)] =
+        exchangeInfo
+          .symbols
+          .filter(_.status == Status.TRADING)
+          .map { pair => pair.baseAssetCurrency -> pair.quoteAssetCurrency }
+    }
   }
 }

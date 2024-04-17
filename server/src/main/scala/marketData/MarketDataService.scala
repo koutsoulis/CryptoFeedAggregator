@@ -25,6 +25,7 @@ import cats.effect.std.Queue
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
+  def allCurrencyPairs: List[(Currency, Currency)]
 }
 
 object MarketDataService {
@@ -127,6 +128,8 @@ object MarketDataService {
                 release = (_, _) => potentiallyShutdownBackingFeed
               ).flatten
           }
+
+          override def allCurrencyPairs: List[(Currency, Currency)] = exchangeSpecific.allCurrencyPairs
         }
     }
 
