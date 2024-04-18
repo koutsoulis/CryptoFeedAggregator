@@ -82,8 +82,8 @@ class App extends TyrianIOApp[Msg, Model] {
 
     Model(
       selection = MarketFeedSelectionStage2.SelectExchange(
-        tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USDT"))))
-        // tradePairs = Map.empty
+        // tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USDT"))))
+        tradePairs = Map.empty
       ),
       Sub.None,
       orderbook = None
