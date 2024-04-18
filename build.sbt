@@ -18,6 +18,7 @@ lazy val tapirVersion = "1.9.6"
 lazy val monocleVersion = "3.2.0"
 lazy val spireVersion = "0.18.0"
 lazy val fs2Version = "3.10.2"
+lazy val chimneyVersion = "0.8.3"
 
 lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(
@@ -45,7 +46,9 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
       "io.bullet" %%% "borer-core" % "1.14.0",
       "io.bullet" %%% "borer-derivation" % "1.14.0",
       "io.bullet" %%% "borer-compat-scodec" % "1.14.0",
-      "org.typelevel" %%% "mouse" % "1.2.3"
+      "org.typelevel" %%% "mouse" % "1.2.3",
+      "io.scalaland" %%% "chimney" % chimneyVersion,
+      "io.scalaland" %%% "chimney-cats" % chimneyVersion
     ),
     semanticdbEnabled := true,
     autoAPIMappings := true,
@@ -101,7 +104,6 @@ lazy val app = (project in file("app"))
 
 lazy val munitCEVersion = "2.0.0-M4"
 lazy val doobieVersion = "1.0.0-RC5"
-lazy val chimneyVersion = "0.8.3"
 lazy val pureConfigVersion = "0.17.4"
 lazy val log4catsVersion = "2.4.0"
 lazy val munitVersion = "0.7.29"
@@ -148,8 +150,6 @@ lazy val server = (project in file("server"))
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
       "org.tpolecat" %% "doobie-postgres" % doobieVersion,
       "org.tpolecat" %% "doobie-weaver" % doobieVersion % Test,
-      "io.scalaland" %% "chimney" % chimneyVersion,
-      "io.scalaland" %% "chimney-cats" % chimneyVersion,
       "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       // "org.slf4j" % "slf4j-simple" % slf4jVersion,

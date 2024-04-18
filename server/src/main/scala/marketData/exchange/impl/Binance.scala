@@ -28,6 +28,9 @@ import org.http4s.client.websocket.WSFrame.Binary
 import _root_.io.circe
 import marketData.exchange.impl.binance.domain.{OrderbookUpdate, Orderbook, RateLimits}
 import binance.dto.ExchangeInfo.SymbolPair.Status
+import marketData.TradePair
+import marketData.exchange.impl.binance.dto.ExchangeInfo
+import _root_.io.scalaland.chimney.syntax.*
 
 trait Binance[F[_]] private (
     client2: binance.Client[F]
@@ -68,6 +71,7 @@ trait Binance[F[_]] private (
 
 object Binance {
   val baseEndpoint = uri"https://api.binance.com"
+  val exchangeInfoUriSegment: String = "api/v3/exchangeInfo"
   val exchangeInfoRequestWeight = 20
   val wsConnectionPermits = 300
   val wsConnectionPermitReleaseTime = 5.minutes
@@ -84,7 +88,7 @@ object Binance {
   ): F[Binance[F]] = {
     for {
       exchangeInfo <- http4sHttpClient
-        .expect[dto.ExchangeInfo](baseEndpoint.addPath("api/v3/exchangeInfo"))
+        .expect[dto.ExchangeInfo](baseEndpoint.addPath(exchangeInfoUriSegment))
       RateLimits(requestWeight, _) <- F.fromEither(RateLimits.of(exchangeInfo))
 
       httpRateLimitSem <- Semaphore(requestWeight.permitsAvailable - exchangeInfoRequestWeight)
@@ -108,10 +112,20 @@ object Binance {
             )
         )
     } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient)) {
+
+      override def activeCurrencyPairs: F[List[TradePair]] =
+        binanceHttpClient
+          .get[ExchangeInfo](baseEndpoint.addPath(exchangeInfoUriSegment).renderString, exchangeInfoRequestWeight)
+          .map(
+            _.symbols
+              .filter(_.status == Status.TRADING)
+              .map { pair => pair.transformInto[TradePair] }
+          )
+
       override def allCurrencyPairs: List[(Currency, Currency)] =
         exchangeInfo
           .symbols
-          .filter(_.status == Status.TRADING)
+          .filter(_.status == Status.TRADING) // TODO remove
           .map { pair => pair.baseAssetCurrency -> pair.quoteAssetCurrency }
     }
   }

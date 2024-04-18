@@ -17,6 +17,8 @@ object MarketDataServiceSpec extends SimpleIOSuite {
 
     val backingStreams = new ExchangeSpecific[IO] {
 
+      override def activeCurrencyPairs: IO[List[TradePair]] = ???
+
       override def allCurrencyPairs: List[(Currency, Currency)] = List(
         Currency("BTC") -> Currency("ETH"),
         Currency("ETH") -> Currency("BTC")

@@ -4,6 +4,9 @@ import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s
 import org.http4s.dsl.io.*
 import org.http4s.implicits.*
+import _root_.io.scalaland.chimney
+import _root_.io.scalaland.chimney.syntax.*
+import _root_.io.scalaland.chimney.cats.*
 import _root_.io.bullet.borer
 import _root_.io.bullet.borer.compat.scodec.*
 import _root_.io.bullet.borer.derivation.ArrayBasedCodecs.*
@@ -17,9 +20,7 @@ import org.http4s.QueryParamKeyLike
 import org.http4s.QueryParam
 import scodec.bits.ByteVector
 import scodec.bits.Bases.Alphabets.Base64Url
-// import scodec.*
-// import scodec.bits.*
-// import scodec.codecs.*
+import java.util.Locale
 
 // TODO: rename to MarketFeedName
 sealed trait FeedDefinition[M: borer.Encoder: borer.Decoder] {
@@ -68,9 +69,15 @@ object FeedDefinition {
       )
   }
 
-  // given queryEncoder: http4s.QueryParamEncoder[marketData.FeedDefinition[?]] = http4s.QueryParamEncoder.fromCodec
-
   object Matcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
 }
 
-case class Currency(name: String) derives borer.Codec, circe.Codec.AsObject
+case class Currency private (name: String) derives borer.Codec, circe.Codec.AsObject
+
+object Currency {
+  def apply(name: String): Currency = new Currency(name.toUpperCase(Locale.ROOT))
+
+  given chimney.Transformer[String, Currency] = s => Currency(s)
+}
+
+case class TradePair(base: Currency, quote: Currency) derives circe.Codec.AsObject

@@ -31,6 +31,7 @@ import names.Exchange
 import org.http4s.Response
 import org.http4s.blazecore.util.EntityBodyWriter
 import org.http4s.server.middleware.CORS
+import marketData.TradePair
 
 trait Server[F[_]: Async]
 
@@ -63,8 +64,8 @@ object Server {
           )
         }
 
-        val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / Exchange(exchange) / "allCurrencyPairs" =>
-          Response[F]().withEntity(marketDataServiceByExchange(exchange).allCurrencyPairs).pure[F]
+        val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / Exchange(exchange) / "activeCurrencyPairs" =>
+          marketDataServiceByExchange(exchange).activeCurrencyPairs.map(Response[F]().withEntity[List[TradePair]])
         }
 
         HttpApp {

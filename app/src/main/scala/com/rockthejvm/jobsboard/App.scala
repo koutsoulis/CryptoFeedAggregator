@@ -40,6 +40,7 @@ import marketData.FeedDefinition.OrderbookFeed
 import marketData.FeedDefinition.Stub
 import names.Exchange
 import org.http4s.circe.CirceEntityCodec.*
+import marketData.TradePair
 
 object App {
   type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?] | InitTradePairs
@@ -69,11 +70,11 @@ class App extends TyrianIOApp[Msg, Model] {
     val client = http4s.dom.FetchClientBuilder[IO].create
 
     def allPairs(exchange: Exchange): IO[Map[Currency, Set[Currency]]] = client
-      .expect[List[(Currency, Currency)]](
+      .expect[List[TradePair]](
         uri = http4s
-          .Uri.fromString(s"http://127.0.0.1:8080/${exchange.toString}/allCurrencyPairs")
+          .Uri.fromString(s"http://127.0.0.1:8080/${exchange.toString}/activeCurrencyPairs")
           .getOrElse(None.get)
-      ).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
+      ).flatTap(IO.println).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
 
     val allPairsPerExchange: IO[Map[Exchange, Map[Currency, Set[Currency]]]] = Exchange
       .values.toList.map { exchange => allPairs(exchange).map(exchange -> _) }

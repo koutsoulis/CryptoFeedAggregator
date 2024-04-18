@@ -1,8 +1,12 @@
 package marketData.exchange.impl.binance.dto
 
+import _root_.io.scalaland.chimney
+import _root_.io.scalaland.chimney.syntax.*
+import _root_.io.scalaland.chimney.cats.*
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import marketData.Currency
+import marketData.TradePair
 
 final case class ExchangeInfo(
     rateLimits: List[ExchangeInfo.RateLimit],
@@ -55,6 +59,14 @@ object ExchangeInfo {
   ) derives circe.Decoder {
     def baseAssetCurrency: Currency = Currency(baseAsset)
     def quoteAssetCurrency: Currency = Currency(quoteAsset)
+
+    // def toTradePair: TradePair = chimney
+    //   .Transformer.define[SymbolPair, TradePair]
+    //   .withFieldRenamed(_.baseAsset, _.base)
+    //   .withFieldRenamed(_.quoteAsset, _.quote)
+    //   .buildTransformer
+    //   .transform(this)
+
   }
 
   object SymbolPair {
@@ -66,5 +78,11 @@ object ExchangeInfo {
       case "TRADING" => Status.TRADING
       case _ => Status.Ignore
     }
+
+    given chimney.Transformer[SymbolPair, TradePair] = chimney
+      .Transformer.define[SymbolPair, TradePair]
+      .withFieldRenamed(_.baseAsset, _.base)
+      .withFieldRenamed(_.quoteAsset, _.quote)
+      .buildTransformer
   }
 }
