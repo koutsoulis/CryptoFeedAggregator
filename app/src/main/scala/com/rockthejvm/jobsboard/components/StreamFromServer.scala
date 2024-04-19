@@ -20,22 +20,22 @@ import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
-import marketData.FeedDefinition
+import marketData.FeedName
 import marketData.Currency
 import com.rockthejvm.jobsboard.components.OrderbookView
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectExchange
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectFeed
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency1
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency2
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.TotalSelection
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectExchange
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurrency1
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurrency2
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.TotalSelection
 import _root_.io.bullet.borer
 import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
-import names.Exchange
+import names.ExchangeName
 
 object StreamFromServer {
-  def stream[M <: Msg](exchange: Exchange, feedName: FeedDefinition[M]): Sub[IO, M] = {
+  def stream[M <: Msg](exchange: ExchangeName, feedName: FeedName[M]): Sub[IO, M] = {
     val undelyingStream: Stream[IO, M] = Stream
       .resource(
         http4s
@@ -43,7 +43,7 @@ object StreamFromServer {
             websocket.WSRequest(
               uri = http4s
                 .Uri.fromString(s"ws://127.0.0.1:8080/${exchange.toString}")
-                .map(_.withQueryParam("feedName", feedName: FeedDefinition[?]))
+                .map(_.withQueryParam("feedName", feedName: FeedName[?]))
                 .getOrElse(None.get)
             )
           )

@@ -23,7 +23,7 @@ import scodec.bits.Bases.Alphabets.Base64Url
 import java.util.Locale
 
 // TODO: rename to MarketFeedName
-sealed trait FeedDefinition[M: borer.Encoder: borer.Decoder] {
+sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
   type Message = M
 
   def nameWithoutParametersForPrometheusLabelValue: String = this.getClass().getSimpleName()
@@ -35,12 +35,12 @@ sealed trait FeedDefinition[M: borer.Encoder: borer.Decoder] {
   def borerDecoderForMessage: borer.Decoder[M] = summon[borer.Decoder[M]]
 }
 
-object FeedDefinition {
-  case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedDefinition[Orderbook] {
+object FeedName {
+  case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedName[Orderbook] {
     override def parametersStringForPrometheusLabelValue: String = currency1.name ++ currency2.name
   }
 
-  case class Stub(_value: Boolean = false) extends FeedDefinition[Stub.Message] {
+  case class Stub(_value: Boolean = false) extends FeedName[Stub.Message] {
     override def parametersStringForPrometheusLabelValue: String = "stub"
   }
 
@@ -48,16 +48,16 @@ object FeedDefinition {
     case class Message(value: Int) derives borer.Codec
   }
 
-  implicit val qpmC: http4s.QueryParamCodec[marketData.FeedDefinition[?]] = {
+  implicit val qpmC: http4s.QueryParamCodec[marketData.FeedName[?]] = {
 
-    given borer.Codec[FeedDefinition[?]] = deriveAllCodecs[FeedDefinition[?]]
+    given borer.Codec[FeedName[?]] = deriveAllCodecs[FeedName[?]]
 
     http4s
       .QueryParamCodec.from(
         decodeA = http4s
           .QueryParamDecoder.stringQueryParamDecoder.emap { string =>
             borer
-              .Cbor.decode(ByteVector.fromValidBase64(string, Base64Url)).to[FeedDefinition[?]].valueEither.left
+              .Cbor.decode(ByteVector.fromValidBase64(string, Base64Url)).to[FeedName[?]].valueEither.left
               .map { err =>
                 println(err.getMessage)
                 ParseFailure(sanitized = err.getMessage, details = err.getMessage)
@@ -69,7 +69,7 @@ object FeedDefinition {
       )
   }
 
-  object Matcher extends QueryParamDecoderMatcher[FeedDefinition[?]]("feedName")
+  object Matcher extends QueryParamDecoderMatcher[FeedName[?]]("feedName")
 }
 
 case class Currency private (name: String) derives borer.Codec, circe.Codec.AsObject

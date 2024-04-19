@@ -2,10 +2,10 @@ package marketData.exchange.impl
 
 import marketData.exchange.ExchangeSpecific
 import marketData.Currency
-import marketData.FeedDefinition
+import marketData.FeedName
 import org.http4s.client.websocket.WSRequest
-import marketData.FeedDefinition.OrderbookFeed
-import marketData.FeedDefinition.Stub
+import marketData.FeedName.OrderbookFeed
+import marketData.FeedName.Stub
 import cats.effect.*
 import cats.*
 import cats.data.*
@@ -38,13 +38,13 @@ trait Binance[F[_]] private (
     implicit F: Async[F]
 ) extends ExchangeSpecific[F] {
 
-  override def stream[M](feedDef: FeedDefinition[M]): Stream[F, M] = feedDef match {
-    case orderbookFeedDef: FeedDefinition.OrderbookFeed => orderbookStream(orderbookFeedDef)
+  override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
+    case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
     case Stub(_value) => ???
   }
 
   // Assumption: ws market stream messages are guaranteed to arrive in order
-  def orderbookStream(level2Def: FeedDefinition.OrderbookFeed): fs2.Stream[F, Orderbook] = level2Def match {
+  def orderbookStream(level2Def: FeedName.OrderbookFeed): fs2.Stream[F, Orderbook] = level2Def match {
     case OrderbookFeed(currency1, currency2) =>
       /**
        * We assume there are no messages missing or out of order

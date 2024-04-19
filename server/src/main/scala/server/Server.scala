@@ -14,7 +14,7 @@ import org.http4s.HttpRoutes
 import org.http4s.server.middleware
 import org.http4s.Uri.Path.Segment
 import marketData.MarketDataService
-import marketData.FeedDefinition
+import marketData.FeedName
 import marketData.Currency
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
@@ -27,7 +27,7 @@ import org.http4s.metrics.prometheus.PrometheusExportService
 import fs2.Stream
 import scala.concurrent.duration.DurationInt
 import myMetrics.MyMetrics
-import names.Exchange
+import names.ExchangeName
 import org.http4s.Response
 import org.http4s.blazecore.util.EntityBodyWriter
 import org.http4s.server.middleware.CORS
@@ -39,14 +39,14 @@ object Server {
   class ServerLive[F[_]](implicit F: Async[F]) extends Server[F] {}
 
   def apply[F[_]: Async: Network](
-      marketDataServiceByExchange: Exchange => MarketDataService[F],
+      marketDataServiceByExchange: ExchangeName => MarketDataService[F],
       metricsExporter: MyMetrics.Exporter[F],
       metricsRegister: MyMetrics.Register[F]
   ): Resource[F, Server[F]] = {
     http4s
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
-        val wsRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / Exchange(exchange) :? FeedDefinition.Matcher(feedName) =>
+        val wsRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) :? FeedName.Matcher(feedName) =>
           wsBuilder.build(
             sendReceive = { messagesFromClient =>
               val messagesToClient = marketDataServiceByExchange(exchange)
@@ -64,7 +64,7 @@ object Server {
           )
         }
 
-        val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / Exchange(exchange) / "activeCurrencyPairs" =>
+        val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) / "activeCurrencyPairs" =>
           marketDataServiceByExchange(exchange).activeCurrencyPairs.map(Response[F]().withEntity[List[TradePair]])
         }
 

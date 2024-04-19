@@ -4,25 +4,25 @@ import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
 import tyrian.*
 import tyrian.Html.*
-import names.Exchange
+import names.ExchangeName
 import marketData.Currency
 import monocle.syntax.all.*
-import marketData.FeedDefinition.OrderbookFeed
-import marketData.FeedDefinition
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectFeed.FeedName
+import marketData.FeedName.OrderbookFeed
+import marketData.FeedName
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed.LegalFeedNameString
 import scala.util.Try
 
-sealed trait MarketFeedSelectionStage2 {
+sealed trait MarketFeedSelectionStage {
   def view: Html[Msg] = div(selectsBackingView)
   def selectsBackingView: List[Html[Msg]]
 }
 
-object MarketFeedSelectionStage2 {
+object MarketFeedSelectionStage {
 
   case class SelectExchange(
-      tradePairs: Map[names.Exchange, Map[Currency, Set[Currency]]],
+      tradePairs: Map[names.ExchangeName, Map[Currency, Set[Currency]]],
       enabled: Boolean = true
-  ) extends MarketFeedSelectionStage2 {
+  ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = List {
       val options: List[Html[Msg]] =
         tradePairs
@@ -32,7 +32,7 @@ object MarketFeedSelectionStage2 {
       select(
         Option.when(!enabled)(Attribute("disabled", "")).toList `appended`
           onInput { value =>
-            Try(Exchange.valueOf(value))
+            Try(ExchangeName.valueOf(value))
               .toOption.fold(
                 ifEmpty = this
               ) { selectedExchange =>
@@ -50,10 +50,10 @@ object MarketFeedSelectionStage2 {
 
   case class SelectFeed(
       previousStep: SelectExchange,
-      exchangeSelected: Exchange,
+      exchangeSelected: ExchangeName,
       tradePairs: Map[Currency, Set[Currency]],
       enabled: Boolean = true
-  ) extends MarketFeedSelectionStage2 {
+  ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView.appended {
       val options: List[Html[Msg]] =
         SelectFeed
@@ -67,7 +67,7 @@ object MarketFeedSelectionStage2 {
               SelectCurrency1(
                 previousStep = this.focus(_.enabled).replace(false),
                 exchangeSelected = exchangeSelected,
-                feedNameAsPartialResult = FeedDefinition.OrderbookFeed.apply.curried,
+                feedNameAsPartialResult = FeedName.OrderbookFeed.apply.curried,
                 tradePairs = tradePairs
               )
             case "Stub" => this
@@ -78,17 +78,17 @@ object MarketFeedSelectionStage2 {
   }
 
   object SelectFeed {
-    type FeedName = "Orderbook" | "Stub"
-    val feedNames: List[FeedName] = List("Orderbook", "Stub")
+    type LegalFeedNameString = "Orderbook" | "Stub"
+    val feedNames: List[LegalFeedNameString] = List("Orderbook", "Stub")
   }
 
   case class SelectCurrency1(
       previousStep: SelectFeed,
-      exchangeSelected: Exchange,
-      feedNameAsPartialResult: Currency => Currency => FeedDefinition[?],
+      exchangeSelected: ExchangeName,
+      feedNameAsPartialResult: Currency => Currency => FeedName[?],
       tradePairs: Map[Currency, Set[Currency]],
       enabled: Boolean = true
-  ) extends MarketFeedSelectionStage2 {
+  ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView.appended {
       val options: List[Html[Msg]] =
         tradePairs
@@ -116,11 +116,11 @@ object MarketFeedSelectionStage2 {
 
   case class SelectCurrency2(
       previousStep: SelectCurrency1,
-      exchangeSelected: Exchange,
-      feedNameAsPartialResult: Currency => FeedDefinition[?],
+      exchangeSelected: ExchangeName,
+      feedNameAsPartialResult: Currency => FeedName[?],
       secondComponentForFixedFirst: Set[Currency],
       enabled: Boolean = true
-  ) extends MarketFeedSelectionStage2 {
+  ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView.appended {
       val options: List[Html[Msg]] =
         secondComponentForFixedFirst
@@ -146,10 +146,10 @@ object MarketFeedSelectionStage2 {
   }
 
   case class TotalSelection(
-      previousStep: MarketFeedSelectionStage2,
-      exchangeSelected: Exchange,
-      feedName: FeedDefinition[?]
-  ) extends MarketFeedSelectionStage2 {
+      previousStep: MarketFeedSelectionStage,
+      exchangeSelected: ExchangeName,
+      feedName: FeedName[?]
+  ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView
   }
 }

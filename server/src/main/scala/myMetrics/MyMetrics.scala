@@ -15,10 +15,10 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import prometheus4cats.*
 import prometheus4cats.javasimpleclient.JavaMetricRegistry
 import org.typelevel.log4cats.Logger
-import marketData.FeedDefinition
-import marketData.FeedDefinition.OrderbookFeed
+import marketData.FeedName
+import marketData.FeedName.OrderbookFeed
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import names.Exchange
+import names.ExchangeName
 
 object MyMetrics {
 
@@ -27,7 +27,7 @@ object MyMetrics {
   }
 
   trait Register[F[_]] {
-    def outgoingConcurrentStreams: Gauge[F, Long, (Exchange, FeedDefinition[?])]
+    def outgoingConcurrentStreams: Gauge[F, Long, (ExchangeName, FeedName[?])]
   }
 
   def apply[F[_]: Async: Slf4jFactory]: Resource[F, (Exporter[F], Register[F])] = {
@@ -38,7 +38,7 @@ object MyMetrics {
       metricsFactory = MetricFactory.builder.build(p4catsJavaMetricRegistry)
       outgoingConcurrentStreamsDefinition <- metricsFactory
         .gauge("concurrent_outgoing_streams").ofLong.help("concurrent outgoing streams indexed by Exchange and FeedDefinition")
-        .labels[(Exchange, FeedDefinition[?])](
+        .labels[(ExchangeName, FeedName[?])](
           Label.Name("exchange") -> { case (exchange, _) =>
             exchange.toString()
           },
@@ -58,7 +58,7 @@ object MyMetrics {
 
       val register = new Register[F] {
 
-        override def outgoingConcurrentStreams: Gauge[F, Long, (Exchange, FeedDefinition[?])] = outgoingConcurrentStreamsDefinition
+        override def outgoingConcurrentStreams: Gauge[F, Long, (ExchangeName, FeedName[?])] = outgoingConcurrentStreamsDefinition
 
       }
 

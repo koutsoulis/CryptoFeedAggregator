@@ -15,8 +15,8 @@ import cats.effect.std.AtomicCell
 import marketData.exchange.ExchangeSpecific
 import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
-import marketData.FeedDefinition.OrderbookFeed
-import marketData.FeedDefinition.Stub
+import marketData.FeedName.OrderbookFeed
+import marketData.FeedName.Stub
 import scala.collection.concurrent.TrieMap
 
 import org.http4s.client.websocket.WSClientHighLevel
@@ -24,7 +24,7 @@ import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
 
 trait MarketDataService[F[_]] {
-  def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message]
+  def stream[Message](feed: FeedName[Message]): Stream[F, Message]
   def activeCurrencyPairs: F[List[TradePair]]
 }
 
@@ -56,20 +56,20 @@ object MarketDataService {
         subscribersCount: Int
     )
 
-    val locks: F[Map[FeedDefinition[?], Mutex[F]]] = exchangeSpecific
+    val locks: F[Map[FeedName[?], Mutex[F]]] = exchangeSpecific
       .allFeedDefs.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
-    val initSFCs: F[Map[FeedDefinition[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeSpecific
+    val initSFCs: F[Map[FeedName[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeSpecific
       .allFeedDefs.traverse { feedDef =>
         Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
       }.map(_.toMap)
 
-    val activeSubs: F[MapRef[F, FeedDefinition[?], Option[Int]]] =
+    val activeSubs: F[MapRef[F, FeedName[?], Option[Int]]] =
       F.delay {
         TrieMap
-          .from[FeedDefinition[?], Int](
+          .from[FeedName[?], Int](
             exchangeSpecific.allFeedDefs.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
@@ -79,13 +79,13 @@ object MarketDataService {
             locks,
             sfcMap
           ) =>
-        def sfc[M](feedDef: FeedDefinition[M]): F[Ref[F, Option[SignalFinalizerCount[M]]]] = {
+        def sfc[M](feedDef: FeedName[M]): F[Ref[F, Option[SignalFinalizerCount[M]]]] = {
           F.fromOption(sfcMap.get(feedDef).map(_.asInstanceOf[Ref[F, Option[SignalFinalizerCount[M]]]]), new Exception(""))
         }
 
         new MarketDataService[F] {
 
-          override def stream[Message](feed: FeedDefinition[Message]): Stream[F, Message] = {
+          override def stream[Message](feed: FeedName[Message]): Stream[F, Message] = {
             def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
               locks(feed).lock.surround {
                 for {

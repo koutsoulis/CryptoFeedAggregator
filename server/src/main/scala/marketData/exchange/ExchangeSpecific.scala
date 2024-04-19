@@ -2,7 +2,7 @@ package marketData.exchange
 
 import marketData.Currency
 import marketData.TradePair
-import marketData.FeedDefinition
+import marketData.FeedName
 import fs2.Stream
 import cats.effect.*
 
@@ -11,13 +11,13 @@ trait ExchangeSpecific[F[_]: Async] {
 
   def activeCurrencyPairs: F[List[TradePair]]
 
-  def allFeedDefs: List[FeedDefinition[?]] = {
-    val allLevel2Defs: List[FeedDefinition.OrderbookFeed] = allCurrencyPairs.map(FeedDefinition.OrderbookFeed.apply)
+  def allFeedDefs: List[FeedName[?]] = {
+    val allLevel2Defs: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
 
     allLevel2Defs // plus others
   }
 
-  def stream[M](feedDef: FeedDefinition[M]): Stream[F, M]
+  def stream[M](feedDef: FeedName[M]): Stream[F, M]
 }
 
 object ExchangeSpecific {
@@ -27,9 +27,9 @@ object ExchangeSpecific {
 
     override def activeCurrencyPairs: F[List[TradePair]] = ???
 
-    override def allFeedDefs: List[FeedDefinition[?]] = List(new FeedDefinition.Stub)
+    override def allFeedDefs: List[FeedName[?]] = List(new FeedName.Stub)
 
-    override def stream[M](feedDef: FeedDefinition[M]): Stream[F, M] = ???
+    override def stream[M](feedDef: FeedName[M]): Stream[F, M] = ???
 
   }
 }

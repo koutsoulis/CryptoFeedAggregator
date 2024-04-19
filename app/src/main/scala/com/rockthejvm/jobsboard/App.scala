@@ -26,31 +26,31 @@ import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
-import marketData.FeedDefinition
+import marketData.FeedName
 import marketData.Currency
 import com.rockthejvm.jobsboard.components.OrderbookView
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectExchange
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectFeed
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency1
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.SelectCurrency2
-import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage2.TotalSelection
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectExchange
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurrency1
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurrency2
+import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.TotalSelection
 import _root_.io.bullet.borer
-import marketData.FeedDefinition.OrderbookFeed
-import marketData.FeedDefinition.Stub
-import names.Exchange
+import marketData.FeedName.OrderbookFeed
+import marketData.FeedName.Stub
+import names.ExchangeName
 import org.http4s.circe.CirceEntityCodec.*
 import marketData.TradePair
 
 object App {
-  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage2 | Sub[IO, ?] | InitTradePairs
+  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage | Sub[IO, ?] | InitTradePairs
 
   object NoOperation
 
-  case class InitTradePairs(tradePairs: Map[Exchange, Map[Currency, Set[Currency]]])
+  case class InitTradePairs(tradePairs: Map[ExchangeName, Map[Currency, Set[Currency]]])
 
   case class Model(
-      selection: MarketFeedSelectionStage2,
+      selection: MarketFeedSelectionStage,
       subscriptionDef: Sub[IO, Msg],
       orderbook: Option[Orderbook]
   )
@@ -65,24 +65,24 @@ class App extends TyrianIOApp[Msg, Model] {
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) = {
 
-    val stubFD: FeedDefinition[?] = FeedDefinition.OrderbookFeed(Currency("ETH"), Currency("BTC"))
+    val stubFD: FeedName[?] = FeedName.OrderbookFeed(Currency("ETH"), Currency("BTC"))
 
     val client = http4s.dom.FetchClientBuilder[IO].create
 
-    def allPairs(exchange: Exchange): IO[Map[Currency, Set[Currency]]] = client
+    def allPairs(exchange: ExchangeName): IO[Map[Currency, Set[Currency]]] = client
       .expect[List[TradePair]](
         uri = http4s
           .Uri.fromString(s"http://127.0.0.1:8080/${exchange.toString}/activeCurrencyPairs")
           .getOrElse(None.get)
       ).flatTap(IO.println).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
 
-    val allPairsPerExchange: IO[Map[Exchange, Map[Currency, Set[Currency]]]] = Exchange
+    val allPairsPerExchange: IO[Map[ExchangeName, Map[Currency, Set[Currency]]]] = ExchangeName
       .values.toList.map { exchange => allPairs(exchange).map(exchange -> _) }
       .sequence
       .map(_.toMap)
 
     Model(
-      selection = MarketFeedSelectionStage2.SelectExchange(
+      selection = MarketFeedSelectionStage.SelectExchange(
         // tradePairs = Map(names.Exchange.Binance -> Map(Currency("ETH") -> Set(Currency("BTC"), Currency("USDT"))))
         tradePairs = Map.empty
       ),
@@ -106,7 +106,7 @@ class App extends TyrianIOApp[Msg, Model] {
       case InitTradePairs(tradePairs) =>
         model
           .focus(_.selection).replace(
-            MarketFeedSelectionStage2.SelectExchange(
+            MarketFeedSelectionStage.SelectExchange(
               tradePairs = tradePairs
             )
           ) -> Cmd.None
@@ -117,7 +117,7 @@ class App extends TyrianIOApp[Msg, Model] {
 
       case ob: Orderbook => model.focus(_.orderbook).replace(Some(ob)) -> Cmd.None
 
-      case selection: MarketFeedSelectionStage2 =>
+      case selection: MarketFeedSelectionStage =>
         val sub: Sub[IO, Orderbook] = Option(selection)
           .collect { case ts: TotalSelection => ts.feedName -> ts.exchangeSelected }
           .map { case (feedName, exchange) =>
