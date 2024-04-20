@@ -4,7 +4,7 @@ import cats.effect.*
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
-import marketData.Currency
+import marketData.names.Currency
 import marketData.exchange.impl.binance.domain.Orderbook
 import cats.effect.*
 import org.http4s.client.websocket

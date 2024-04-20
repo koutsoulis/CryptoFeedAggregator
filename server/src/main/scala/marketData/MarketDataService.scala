@@ -22,6 +22,7 @@ import scala.collection.concurrent.TrieMap
 import org.http4s.client.websocket.WSClientHighLevel
 import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
+import marketData.names.TradePair
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedName[Message]): Stream[F, Message]

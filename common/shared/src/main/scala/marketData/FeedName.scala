@@ -21,6 +21,7 @@ import org.http4s.QueryParam
 import scodec.bits.ByteVector
 import scodec.bits.Bases.Alphabets.Base64Url
 import java.util.Locale
+import marketData.names.Currency
 
 // TODO: rename to MarketFeedName
 sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
@@ -48,7 +49,7 @@ object FeedName {
     case class Message(value: Int) derives borer.Codec
   }
 
-  implicit val qpmC: http4s.QueryParamCodec[marketData.FeedName[?]] = {
+  given http4s.QueryParamCodec[marketData.FeedName[?]] = {
 
     given borer.Codec[FeedName[?]] = deriveAllCodecs[FeedName[?]]
 
@@ -71,13 +72,3 @@ object FeedName {
 
   object Matcher extends QueryParamDecoderMatcher[FeedName[?]]("feedName")
 }
-
-case class Currency private (name: String) derives borer.Codec, circe.Codec.AsObject
-
-object Currency {
-  def apply(name: String): Currency = new Currency(name.toUpperCase(Locale.ROOT))
-
-  given chimney.Transformer[String, Currency] = s => Currency(s)
-}
-
-case class TradePair(base: Currency, quote: Currency) derives circe.Codec.AsObject

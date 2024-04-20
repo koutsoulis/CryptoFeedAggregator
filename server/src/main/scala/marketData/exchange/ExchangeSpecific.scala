@@ -1,7 +1,7 @@
 package marketData.exchange
 
-import marketData.Currency
-import marketData.TradePair
+import marketData.names.Currency
+import marketData.names.TradePair
 import marketData.FeedName
 import fs2.Stream
 import cats.effect.*

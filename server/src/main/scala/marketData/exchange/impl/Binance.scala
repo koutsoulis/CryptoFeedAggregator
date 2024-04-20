@@ -1,8 +1,8 @@
 package marketData.exchange.impl
 
 import marketData.exchange.ExchangeSpecific
-import marketData.Currency
 import marketData.FeedName
+import marketData.names.Currency
 import org.http4s.client.websocket.WSRequest
 import marketData.FeedName.OrderbookFeed
 import marketData.FeedName.Stub
@@ -28,7 +28,7 @@ import org.http4s.client.websocket.WSFrame.Binary
 import _root_.io.circe
 import marketData.exchange.impl.binance.domain.{OrderbookUpdate, Orderbook, RateLimits}
 import binance.dto.ExchangeInfo.SymbolPair.Status
-import marketData.TradePair
+import marketData.names.TradePair
 import marketData.exchange.impl.binance.dto.ExchangeInfo
 import _root_.io.scalaland.chimney.syntax.*
 

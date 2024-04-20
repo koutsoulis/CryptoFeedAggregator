@@ -5,8 +5,8 @@ import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
-import marketData.Currency
-import marketData.TradePair
+import marketData.names.Currency
+import marketData.names.TradePair
 
 final case class ExchangeInfo(
     rateLimits: List[ExchangeInfo.RateLimit],

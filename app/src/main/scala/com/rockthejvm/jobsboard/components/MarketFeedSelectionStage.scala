@@ -5,7 +5,7 @@ import com.rockthejvm.jobsboard.App.Msg
 import tyrian.*
 import tyrian.Html.*
 import names.ExchangeName
-import marketData.Currency
+import marketData.names.Currency
 import monocle.syntax.all.*
 import marketData.FeedName.OrderbookFeed
 import marketData.FeedName

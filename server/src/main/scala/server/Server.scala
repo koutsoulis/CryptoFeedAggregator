@@ -15,7 +15,7 @@ import org.http4s.server.middleware
 import org.http4s.Uri.Path.Segment
 import marketData.MarketDataService
 import marketData.FeedName
-import marketData.Currency
+import marketData.names.Currency
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import _root_.io.bullet.borer.Cbor
@@ -31,7 +31,7 @@ import names.ExchangeName
 import org.http4s.Response
 import org.http4s.blazecore.util.EntityBodyWriter
 import org.http4s.server.middleware.CORS
-import marketData.TradePair
+import marketData.names.TradePair
 
 trait Server[F[_]: Async]
 

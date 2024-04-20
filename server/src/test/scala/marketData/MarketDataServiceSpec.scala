@@ -9,6 +9,8 @@ import fs2.Stream
 import marketData.FeedName.OrderbookFeed
 import marketData.FeedName.Stub
 import marketData.exchange.ExchangeSpecific
+import marketData.names.TradePair
+import marketData.names.Currency
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
