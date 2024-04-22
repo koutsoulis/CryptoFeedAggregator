@@ -71,7 +71,6 @@ object Server {
         HttpApp {
           wsRoutes
             .combineK(metricsExporter.metricsRoute)
-            // .combineK(httpRoutes)
             .combineK(CORS.policy.withAllowOriginAll.httpRoutes(httpRoutes))
             .orNotFound.run
         }

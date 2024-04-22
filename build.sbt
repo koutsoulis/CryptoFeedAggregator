@@ -169,7 +169,8 @@ lazy val server = (project in file("server"))
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
       "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
-      "com.github.cb372" %% "cats-retry" % catsRetryVersion,
+      "is.cir" %% "ciris" % "3.5.0",
+      "io.github.keirlawson" %% "ciris-aws-secretsmanager" % "7.0.0",
       "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
     ),
     semanticdbEnabled := true,
@@ -194,7 +195,11 @@ lazy val server = (project in file("server"))
         name = "typelevel-project-backend",
         tag = Some("anotherversion")
       ),
-    Docker / dockerUpdateLatest := true
+    Docker / dockerUpdateLatest.withRank(KeyRanks.Invisible) := true,
+    // development environment variables
+    reStart / envVars := Map(
+      "ENV" -> "development"
+    )
   ).dependsOn(common.jvm)
 
 enablePlugins(RevolverPlugin)
