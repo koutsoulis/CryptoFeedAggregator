@@ -26,7 +26,7 @@ import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
-import marketData.FeedName
+import marketData.names.FeedName
 import marketData.names.Currency
 import com.rockthejvm.jobsboard.components.OrderbookView
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage
@@ -36,8 +36,8 @@ import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurren
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurrency2
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.TotalSelection
 import _root_.io.bullet.borer
-import marketData.FeedName.OrderbookFeed
-import marketData.FeedName.Stub
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName.Stub
 import names.ExchangeName
 import org.http4s.circe.CirceEntityCodec.*
 import marketData.names.TradePair

@@ -14,7 +14,7 @@ import org.http4s.HttpRoutes
 import org.http4s.server.middleware
 import org.http4s.Uri.Path.Segment
 import marketData.MarketDataService
-import marketData.FeedName
+import marketData.names.FeedName
 import marketData.names.Currency
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*

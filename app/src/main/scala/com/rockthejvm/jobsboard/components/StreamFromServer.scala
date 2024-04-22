@@ -20,7 +20,7 @@ import _root_.io.bullet.borer.compat.scodec.*
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
-import marketData.FeedName
+import marketData.names.FeedName
 import marketData.names.Currency
 import com.rockthejvm.jobsboard.components.OrderbookView
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage

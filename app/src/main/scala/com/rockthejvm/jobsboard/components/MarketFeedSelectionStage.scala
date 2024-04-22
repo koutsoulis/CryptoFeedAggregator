@@ -7,8 +7,8 @@ import tyrian.Html.*
 import names.ExchangeName
 import marketData.names.Currency
 import monocle.syntax.all.*
-import marketData.FeedName.OrderbookFeed
-import marketData.FeedName
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed.LegalFeedNameString
 import scala.util.Try
 

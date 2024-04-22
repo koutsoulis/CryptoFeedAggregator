@@ -10,6 +10,7 @@ import org.http4s
 import concurrent.duration.DurationInt
 import marketData.exchange.impl.binance.domain.Orderbook
 import fs2.Stream
+import marketData.names.Currency
 
 object MarketDataServiceIT extends SimpleIOSuite {
   val mdService: Resource[IO, MarketDataService[IO]] = {
@@ -23,7 +24,7 @@ object MarketDataServiceIT extends SimpleIOSuite {
   test("bs test") {
     mdService.use { mdService =>
       val res: IO[Unit] = mdService
-        .stream[Orderbook](FeedName.OrderbookFeed(Currency("ETH"), Currency("BTC")))
+        .stream[Orderbook](names.FeedName.OrderbookFeed(Currency("ETH"), Currency("BTC")))
         .metered[IO](5.seconds).take(3)
         .evalMap { ob =>
           IO.println(ob.lastUpdateId)

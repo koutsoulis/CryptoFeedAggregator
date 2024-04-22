@@ -6,11 +6,12 @@ import cats.*
 import cats.data.*
 import cats.syntax.all.*
 import fs2.Stream
-import marketData.FeedName.OrderbookFeed
-import marketData.FeedName.Stub
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName.Stub
 import marketData.exchange.ExchangeSpecific
 import marketData.names.TradePair
 import marketData.names.Currency
+import names.FeedName
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
@@ -31,7 +32,7 @@ object MarketDataServiceSpec extends SimpleIOSuite {
         case stubFeed: Stub =>
           Stream
             .eval(ref.update(_ + 1)) >> Stream
-            .iterate(start = 0)(_ + 1).map(FeedName.Stub.Message.apply)
+            .iterate(start = 0)(_ + 1).map(names.FeedName.Stub.Message.apply)
             .covary[IO]
         // .evalTap(IO.print)
       }

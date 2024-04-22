@@ -15,8 +15,8 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import prometheus4cats.*
 import prometheus4cats.javasimpleclient.JavaMetricRegistry
 import org.typelevel.log4cats.Logger
-import marketData.FeedName
-import marketData.FeedName.OrderbookFeed
+import marketData.names.FeedName
+import marketData.names.FeedName.OrderbookFeed
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import names.ExchangeName
 

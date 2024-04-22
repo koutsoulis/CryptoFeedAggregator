@@ -15,14 +15,15 @@ import cats.effect.std.AtomicCell
 import marketData.exchange.ExchangeSpecific
 import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
-import marketData.FeedName.OrderbookFeed
-import marketData.FeedName.Stub
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName.Stub
 import scala.collection.concurrent.TrieMap
 
 import org.http4s.client.websocket.WSClientHighLevel
 import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
 import marketData.names.TradePair
+import names.FeedName
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedName[Message]): Stream[F, Message]

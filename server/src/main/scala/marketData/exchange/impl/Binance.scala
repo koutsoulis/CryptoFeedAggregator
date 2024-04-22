@@ -1,11 +1,11 @@
 package marketData.exchange.impl
 
 import marketData.exchange.ExchangeSpecific
-import marketData.FeedName
+import marketData.names.FeedName
 import marketData.names.Currency
 import org.http4s.client.websocket.WSRequest
-import marketData.FeedName.OrderbookFeed
-import marketData.FeedName.Stub
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName.Stub
 import cats.effect.*
 import cats.*
 import cats.data.*

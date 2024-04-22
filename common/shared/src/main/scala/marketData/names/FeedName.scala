@@ -1,4 +1,4 @@
-package marketData
+package marketData.names
 
 import marketData.exchange.impl.binance.domain.Orderbook
 import org.http4s
@@ -23,7 +23,6 @@ import scodec.bits.Bases.Alphabets.Base64Url
 import java.util.Locale
 import marketData.names.Currency
 
-// TODO: rename to MarketFeedName
 sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
   type Message = M
 
@@ -49,7 +48,7 @@ object FeedName {
     case class Message(value: Int) derives borer.Codec
   }
 
-  given http4s.QueryParamCodec[marketData.FeedName[?]] = {
+  given http4s.QueryParamCodec[FeedName[?]] = {
 
     given borer.Codec[FeedName[?]] = deriveAllCodecs[FeedName[?]]
 
