@@ -5,7 +5,6 @@ import marketData.names.FeedName
 import marketData.names.Currency
 import org.http4s.client.websocket.WSRequest
 import marketData.names.FeedName.OrderbookFeed
-import marketData.names.FeedName.Stub
 import cats.effect.*
 import cats.*
 import cats.data.*
@@ -44,7 +43,6 @@ trait Binance[F[_]] private (
   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
     case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
     case Candlesticks(tradePair) => client2.candlesticks(tradePair)
-    case Stub(_value) => ???
   }
 
   // Assumption: ws market stream messages are guaranteed to arrive in order

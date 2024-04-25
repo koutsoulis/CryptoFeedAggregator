@@ -12,7 +12,6 @@ import mouse.all.*
 import marketData.domain.Candlestick
 import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName.Candlesticks
-import marketData.names.FeedName.Stub
 
 trait ExchangeSpecific[F[_]: Async] {
   def allCurrencyPairs: List[TradePair]

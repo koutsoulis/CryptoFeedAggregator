@@ -37,7 +37,6 @@ import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectCurren
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.TotalSelection
 import _root_.io.bullet.borer
 import marketData.names.FeedName.OrderbookFeed
-import marketData.names.FeedName.Stub
 import names.ExchangeName
 import org.http4s.circe.CirceEntityCodec.*
 import marketData.names.TradePair
@@ -130,7 +129,6 @@ class App extends TyrianIOApp[Msg, Model] {
             feedName match {
               case feedName: OrderbookFeed => components.StreamFromServer.stream(exchange, feedName)
               case feedName: Candlesticks => components.StreamFromServer.stream(exchange, feedName)
-              case Stub(_) => Sub.None
             }
           }.getOrElse(Sub.None)
 

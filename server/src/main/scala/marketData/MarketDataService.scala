@@ -16,7 +16,6 @@ import marketData.exchange.ExchangeSpecific
 import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
 import marketData.names.FeedName.OrderbookFeed
-import marketData.names.FeedName.Stub
 import scala.collection.concurrent.TrieMap
 
 import org.http4s.client.websocket.WSClientHighLevel

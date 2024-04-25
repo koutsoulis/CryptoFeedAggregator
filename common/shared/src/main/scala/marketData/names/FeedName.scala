@@ -45,14 +45,6 @@ object FeedName {
     override val parametersStringForPrometheusLabelValue: String = tradePair.base.name ++ tradePair.quote.name
   }
 
-  case class Stub(_value: Boolean = false) extends FeedName[Stub.Message] {
-    override val parametersStringForPrometheusLabelValue: String = "stub"
-  }
-
-  object Stub {
-    case class Message(value: Int) derives borer.Codec
-  }
-
   given http4s.QueryParamCodec[FeedName[?]] = {
 
     given borer.Codec[FeedName[?]] = deriveAllCodecs[FeedName[?]]

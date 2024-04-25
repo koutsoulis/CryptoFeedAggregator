@@ -7,7 +7,6 @@ import cats.data.*
 import cats.syntax.all.*
 import fs2.Stream
 import marketData.names.FeedName.OrderbookFeed
-import marketData.names.FeedName.Stub
 import marketData.exchange.ExchangeSpecific
 import marketData.names.TradePair
 import marketData.names.Currency
@@ -19,9 +18,6 @@ import marketData.domain.Candlestick
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
-    // def emitStubMessagesForever[Message](stubFeed: FeedDefinition[Message]): Stream[IO, Message] =
-    //   Stream.iterate(start = 0)(_ + 1).map(FeedDefinition.Stub.Message.apply).covary[IO]
-
     val backingStreams = new ExchangeSpecific[IO] {
 
       override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
@@ -36,7 +32,6 @@ object MarketDataServiceSpec extends SimpleIOSuite {
         case Candlesticks(tradePair) =>
           Stream.eval(ref.update(_ + 1)) >>
             Stream.fromIterator(Iterator.continually(Candlestick(1, 1, 1, 1)), 1)
-        case stubFeed: Stub => ???
       }
 
     }
@@ -45,7 +40,6 @@ object MarketDataServiceSpec extends SimpleIOSuite {
   }
 
   test("reuses the backing stream when two requests overlap") {
-    // val exchangeParamsStub = ExchangeSpecific.stub
     for {
       (bStreams, callCount) <- backingStreamsAndCallCount
       marketDataService <- MarketDataService.apply(bStreams)
