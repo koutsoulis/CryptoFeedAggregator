@@ -24,15 +24,15 @@ object MarketDataServiceSpec extends SimpleIOSuite {
 
     val backingStreams = new ExchangeSpecific[IO] {
 
-      override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.map(TradePair.apply).pure
+      override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
 
-      override def allCurrencyPairs: List[(Currency, Currency)] = List(
+      override def allCurrencyPairs: List[TradePair] = List(
         Currency("BTC") -> Currency("ETH"),
         Currency("ETH") -> Currency("BTC")
-      )
+      ).map(TradePair.apply)
 
       override def stream[Message](feed: FeedName[Message]): Stream[IO, Message] = feed match {
-        case OrderbookFeed(currency1, currency2) => ???
+        case _: OrderbookFeed => ???
         case Candlesticks(tradePair) =>
           Stream.eval(ref.update(_ + 1)) >>
             Stream.fromIterator(Iterator.continually(Candlestick(1, 1, 1, 1)), 1)
@@ -70,9 +70,9 @@ object MarketDataServiceSpec extends SimpleIOSuite {
       .apply(
         new ExchangeSpecific {
 
-          override def allCurrencyPairs: List[(Currency, Currency)] = List(Currency("BTC") -> Currency("ETH"))
+          override def allCurrencyPairs: List[TradePair] = List(Currency("BTC") -> Currency("ETH")).map(TradePair.apply)
 
-          override def activeCurrencyPairs: IO[List[TradePair]] = List(Currency("BTC") -> Currency("ETH")).map(TradePair.apply).pure
+          override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
 
           override def stream[M](feedDef: FeedName[M]): Stream[IO, M] = Stream.raiseError(errorFromExchangeService)
         }

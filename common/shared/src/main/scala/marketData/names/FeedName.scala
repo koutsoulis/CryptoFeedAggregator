@@ -37,8 +37,8 @@ sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
 }
 
 object FeedName {
-  case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedName[Orderbook] {
-    override val parametersStringForPrometheusLabelValue: String = currency1.name ++ currency2.name
+  case class OrderbookFeed(tradePair: TradePair) extends FeedName[Orderbook] {
+    override val parametersStringForPrometheusLabelValue: String = tradePair.base.name ++ tradePair.quote.name
   }
 
   case class Candlesticks(tradePair: TradePair) extends FeedName[Candlestick] {

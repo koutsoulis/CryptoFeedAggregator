@@ -15,13 +15,13 @@ import marketData.names.FeedName.Candlesticks
 import marketData.names.FeedName.Stub
 
 trait ExchangeSpecific[F[_]: Async] {
-  def allCurrencyPairs: List[(Currency, Currency)]
+  def allCurrencyPairs: List[TradePair]
 
   def activeCurrencyPairs: F[List[TradePair]]
 
   def allFeedNames: List[FeedName[?]] = {
     val allLevel2Names: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
-    val allCandlestickNames: List[FeedName.Candlesticks] = allCurrencyPairs.map(TradePair.apply).map(FeedName.Candlesticks.apply)
+    val allCandlestickNames: List[FeedName.Candlesticks] = allCurrencyPairs.map(FeedName.Candlesticks.apply)
 
     allLevel2Names.prependedAll(allCandlestickNames) // plus others
   }

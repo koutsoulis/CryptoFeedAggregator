@@ -34,18 +34,18 @@ class Client[F[_]](
     httpClient: HttpClient[F],
     wsClient: WSClient[F]
 )(using F: Async[F]) {
-  def orderbookSnapshot(currency1: Currency, currency2: Currency): F[Orderbook] =
+  def orderbookSnapshot(tradePair: TradePair): F[Orderbook] =
     httpClient
       .get[dto.Orderbook](
-        s"https://api.binance.com/api/v3/depth?symbol=${Binance.tradePairSymbol(currency1, currency2)}&limit=5000",
+        s"https://api.binance.com/api/v3/depth?symbol=${Binance.tradePairSymbol(tradePair)}&limit=5000",
         250
       )
       .map(dto.Orderbook.transformer.transform)
 
-  def orderbookUpdates(currency1: Currency, currency2: Currency): Stream[F, domain.OrderbookUpdate] =
+  def orderbookUpdates(tradePair: TradePair): Stream[F, domain.OrderbookUpdate] =
     wsClient
       .wsConnect[dto.OrderbookUpdate](
-        s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(currency1, currency2)}@depth@100ms"
+        s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(tradePair)}@depth@100ms"
       ).map(domain.OrderbookUpdate.transformer.transform)
       .evalTap(out => F.delay(println(out.lastUpdateId)))
 

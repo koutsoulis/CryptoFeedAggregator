@@ -49,13 +49,13 @@ trait Binance[F[_]] private (
 
   // Assumption: ws market stream messages are guaranteed to arrive in order
   private def orderbookStream(level2Def: FeedName.OrderbookFeed): Stream[F, Orderbook] = level2Def match {
-    case OrderbookFeed(currency1, currency2) =>
+    case OrderbookFeed(tradePair) =>
       /**
        * We assume there are no messages missing or out of order
        */
-      val orderbookUpdates: Stream[F, OrderbookUpdate] = client2.orderbookUpdates(currency1 = currency1, currency2 = currency2)
+      val orderbookUpdates: Stream[F, OrderbookUpdate] = client2.orderbookUpdates(tradePair)
 
-      val orderbookSnapshot: F[Orderbook] = client2.orderbookSnapshot(currency1 = currency1, currency2 = currency2)
+      val orderbookSnapshot: F[Orderbook] = client2.orderbookSnapshot(tradePair)
 
       // TODO check if expressible using Stream#debounce
       val orderbookSnapshotsAsNestedPull = for {
@@ -81,8 +81,7 @@ object Binance {
   val wsConnectionPermitReleaseTime = 5.minutes
   def symbol(currency: Currency): String = currency.name
   def streamSymbol(currency: Currency): String = currency.name.toLowerCase()
-  def tradePairSymbol(c1: Currency, c2: Currency): String = symbol(c1) ++ symbol(c2)
-  def streamTradePairSymbol(c1: Currency, c2: Currency): String = streamSymbol(c1) ++ streamSymbol(c2)
+  def tradePairSymbol(pair: TradePair): String = symbol(pair.base) ++ symbol(pair.quote)
   def streamTradePairSymbol(pair: TradePair): String = streamSymbol(pair.base) ++ streamSymbol(pair.quote)
 
   def apply[F[_]: Logger](
@@ -127,10 +126,8 @@ object Binance {
               .map { pair => pair.transformInto[TradePair] }
           )
 
-      override def allCurrencyPairs: List[(Currency, Currency)] =
-        exchangeInfo
-          .symbols
-          .map { pair => pair.baseAssetCurrency -> pair.quoteAssetCurrency }
+      override def allCurrencyPairs: List[TradePair] =
+        exchangeInfo.symbols.map(_.transformInto[TradePair])
     }
   }
 }

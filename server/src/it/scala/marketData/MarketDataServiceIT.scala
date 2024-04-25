@@ -13,6 +13,7 @@ import fs2.Stream
 import marketData.names.Currency
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.Logger
+import marketData.names.TradePair
 
 object MarketDataServiceIT extends SimpleIOSuite {
   val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
@@ -28,7 +29,7 @@ object MarketDataServiceIT extends SimpleIOSuite {
   test("bs test") {
     mdService.use { mdService =>
       val res: IO[Unit] = mdService
-        .stream[Orderbook](names.FeedName.OrderbookFeed(Currency("ETH"), Currency("BTC")))
+        .stream[Orderbook](names.FeedName.OrderbookFeed(TradePair(Currency("ETH"), Currency("BTC"))))
         .metered[IO](5.seconds).take(3)
         .evalMap { ob =>
           IO.println(ob.lastUpdateId)

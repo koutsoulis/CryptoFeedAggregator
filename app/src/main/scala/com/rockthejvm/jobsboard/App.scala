@@ -69,8 +69,6 @@ class App extends TyrianIOApp[Msg, Model] {
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) = {
 
-    val stubFD: FeedName[?] = FeedName.OrderbookFeed(Currency("ETH"), Currency("BTC"))
-
     val client = http4s.dom.FetchClientBuilder[IO].create
 
     def allPairs(exchange: ExchangeName): IO[Map[Currency, Set[Currency]]] = client

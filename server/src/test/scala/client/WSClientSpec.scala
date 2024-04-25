@@ -236,7 +236,7 @@ object WSClientSpec extends SimpleIOSuite {
     }
   }
 
-  test("throws sensible error if DTO regressed") {
+  test("raises sensible error if DTO regressed") {
     val rateLimitPermits = 1 // arbitrary
     val rateLimitPeriod = 0.milliseconds // arbitrary
 

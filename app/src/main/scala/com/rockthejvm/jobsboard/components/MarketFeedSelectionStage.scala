@@ -68,7 +68,7 @@ object MarketFeedSelectionStage {
               SelectCurrency1(
                 previousStep = this.focus(_.enabled).replace(false),
                 exchangeSelected = exchangeSelected,
-                feedNameAsPartialResult = FeedName.OrderbookFeed.apply.curried,
+                feedNameAsPartialResult = { currency1 => currency2 => FeedName.OrderbookFeed(TradePair(currency1, currency2)) },
                 tradePairs = tradePairs
               )
             case "Candlesticks" =>
