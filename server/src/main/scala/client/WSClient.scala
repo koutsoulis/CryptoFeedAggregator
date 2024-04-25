@@ -13,13 +13,14 @@ import org.http4s.dsl.*
 import org.http4s.implicits.*
 import org.http4s.Uri
 import fs2.Stream
+import org.typelevel.log4cats.Logger
 
 trait WSClient[F[_]: Async] {
   def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out]
 }
 
 object WSClient {
-  class WSCLientLive[F[_]](
+  class WSCLientLive[F[_]: Logger](
       wsClient: websocket.WSClientHighLevel[F],
       wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
   )(
@@ -39,12 +40,14 @@ object WSClient {
      */
     override def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out] = {
       val establishWSConnection = F.bracketFull { poll =>
-        F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
+        Logger[F].debug(s"ws connect attempt to: $uri") *>
+          F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
           poll(wsEstablishConnectionRL.semaphore.acquire)
       } { wsRequest =>
         wsClient.connectHighLevel(wsRequest).allocatedCase
-      } { (_, _) =>
-        F.start(F.sleep(wsEstablishConnectionRL.releaseTime) *> wsEstablishConnectionRL.semaphore.release).void
+      } { (_, outcome) =>
+        Logger[F].debug(s"ws attempt to: $uri , outcome: $outcome") *>
+          F.start(F.sleep(wsEstablishConnectionRL.releaseTime) *> wsEstablishConnectionRL.semaphore.release).void
       }
 
       Stream
@@ -54,11 +57,11 @@ object WSClient {
           case websocket.WSFrame.Text(data, _) => F.fromEither(circe.parser.decode[Out](data))
           case _: websocket.WSFrame.Binary =>
             F.raiseError(new Exception(s"Expected text but received binary ws frame while consuming stream of $uri"))
-        }
+        }.evalTapChunk { out => Logger[F].debug(s"received from $uri and decoded frame: $out") }
     }
   }
 
-  def apply[F[_]: Async](
+  def apply[F[_]: Async: Logger](
       wsClient: websocket.WSClientHighLevel[F],
       wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
   ): WSClient[F] = WSCLientLive(wsClient, wsEstablishConnectionRL)

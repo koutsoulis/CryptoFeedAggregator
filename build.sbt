@@ -200,8 +200,9 @@ lazy val server = (project in file("server"))
     reStart / envVars := Map(
       "ENV" -> "development"
     )
+    // reStart / javaOptions += "-Dcats.effect.tracing.buffer.size=128"
   ).dependsOn(common.jvm)
 
 enablePlugins(RevolverPlugin)
 
-mainClass in reStart := Some("Main")
+mainClass in reStart := Some("MyProjectMain")

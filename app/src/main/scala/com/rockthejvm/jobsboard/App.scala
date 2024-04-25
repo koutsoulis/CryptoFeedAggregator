@@ -41,9 +41,12 @@ import marketData.names.FeedName.Stub
 import names.ExchangeName
 import org.http4s.circe.CirceEntityCodec.*
 import marketData.names.TradePair
+import marketData.names.FeedName.Candlesticks
+import marketData.domain.Candlestick
+import com.rockthejvm.jobsboard.components.CandlestickView
 
 object App {
-  type Msg = NoOperation.type | Orderbook | MarketFeedSelectionStage | Sub[IO, ?] | InitTradePairs
+  type Msg = NoOperation.type | Orderbook | Candlestick | MarketFeedSelectionStage | Sub[IO, ?] | InitTradePairs
 
   object NoOperation
 
@@ -52,7 +55,8 @@ object App {
   case class Model(
       selection: MarketFeedSelectionStage,
       subscriptionDef: Sub[IO, Msg],
-      orderbook: Option[Orderbook]
+      orderbook: Option[Orderbook],
+      candlestick: Option[Candlestick]
   )
 }
 
@@ -87,7 +91,8 @@ class App extends TyrianIOApp[Msg, Model] {
         tradePairs = Map.empty
       ),
       Sub.None,
-      orderbook = None
+      orderbook = None,
+      candlestick = None
     ) -> Cmd.Run(allPairsPerExchange.map(InitTradePairs.apply))
   }
 
@@ -96,7 +101,8 @@ class App extends TyrianIOApp[Msg, Model] {
   override def view(model: Model): Html[Msg] =
     div(
       List(model.selection.view) ++
-        model.orderbook.map(OrderbookView.view)
+        model.orderbook.map(OrderbookView.view) ++
+        model.candlestick.map(CandlestickView.view)
     )
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { msg =>
@@ -117,12 +123,15 @@ class App extends TyrianIOApp[Msg, Model] {
 
       case ob: Orderbook => model.focus(_.orderbook).replace(Some(ob)) -> Cmd.None
 
+      case cs: Candlestick => model.focus(_.candlestick).replace(Some(cs)) -> Cmd.None
+
       case selection: MarketFeedSelectionStage =>
-        val sub: Sub[IO, Orderbook] = Option(selection)
+        val sub: Sub[IO, Orderbook | Candlestick] = Option(selection)
           .collect { case ts: TotalSelection => ts.feedName -> ts.exchangeSelected }
           .map { case (feedName, exchange) =>
             feedName match {
               case feedName: OrderbookFeed => components.StreamFromServer.stream(exchange, feedName)
+              case feedName: Candlesticks => components.StreamFromServer.stream(exchange, feedName)
               case Stub(_) => Sub.None
             }
           }.getOrElse(Sub.None)

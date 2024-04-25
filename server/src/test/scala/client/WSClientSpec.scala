@@ -27,12 +27,17 @@ import cats.effect.testkit.TestControl
 import _root_.io.circe
 import client.testUtils.*
 import scala.concurrent.duration.FiniteDuration
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.Logger
 
 object WSClientSpec extends SimpleIOSuite {
+  implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
+  given Logger[IO] = Slf4jFactory.getLogger[IO]
 
   def stubBackingClient(
       delayBetweenElementsInTheStream: FiniteDuration =
-        100.milliseconds // arbitrary positive, no relation to other fixed numbers in the file
+        100.milliseconds, // arbitrary positive, no relation to other fixed numbers in the file
+      frameLoad: Option[String] = None
   ): IO[(WSClientHighLevel[IO], Ref[IO, Vector[FiniteDuration]])] =
     IO.ref(Vector.empty[FiniteDuration]).map { receptionTimes =>
       val backingClient = new websocket.WSClientHighLevel[IO] {
@@ -44,7 +49,9 @@ object WSClientSpec extends SimpleIOSuite {
 
                 override def receiveStream: Stream[IO, WSDataFrame] = Stream
                   .fromIterator[IO](
-                    Iterator.from(0).map(_.toString()).map { str => WSFrame.Text(str) },
+                    frameLoad
+                      .map(Iterator.continually).getOrElse(Iterator.from(0))
+                      .map(_.toString()).map { str => WSFrame.Text(str) },
                     1
                   ).spaced(delayBetweenElementsInTheStream)
 
@@ -226,6 +233,38 @@ object WSClientSpec extends SimpleIOSuite {
         expect(permitsAfterConnectAndBeforeRateLimitRefreshWindow == 0) &&
         expect(permitsAfterRateLimitRefreshWindow == 1) &&
         expect(permitsAfterStreamConclusion == 1)
+    }
+  }
+
+  test("throws sensible error if DTO regressed") {
+    val rateLimitPermits = 1 // arbitrary
+    val rateLimitPeriod = 0.milliseconds // arbitrary
+
+    final case class DTOWhichRegressed(
+        oldFieldName: String
+    ) derives circe.Decoder
+
+    val frameLoadWithNewIncompatibleStructure = """
+      {"newFieldName":"whatever"}
+    """
+
+    def clientUnderTestAndRLSemaphore = (
+      stubBackingClient(frameLoad = Some(frameLoadWithNewIncompatibleStructure)),
+      Semaphore[IO](rateLimitPermits).map { sem => RLSemaphoreAndReleaseTime(sem, rateLimitPeriod) -> sem }
+    ).mapN { case ((backingCLient, _), (rateLimits, sem)) =>
+      WSClient(backingCLient, rateLimits) -> sem
+    }
+
+    val scenario = for {
+      (clientUnderTest, _) <- clientUnderTestAndRLSemaphore
+      _ <- clientUnderTest
+        .wsConnect[DTOWhichRegressed]("foo://example.com")
+        .take(1).compile.drain
+    } yield ()
+
+    TestControl.executeEmbed(scenario).attempt.map { outcome =>
+      println(outcome)
+      expect(outcome.isLeft)
     }
   }
 

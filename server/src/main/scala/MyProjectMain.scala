@@ -10,14 +10,16 @@ import cats.data.*
 import cats.syntax.all.*
 import myMetrics.MyMetrics
 import names.ExchangeName
+import org.http4s.client.middleware.Logger
 
-object Main extends IOApp.Simple {
+object MyProjectMain extends IOApp.Simple {
   override def run: IO[Unit] = {
     implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
     val serverResource = for {
-      httpClient <- EmberClientBuilder.default[IO].build
+      logger <- loggerFactory.create.toResource
+      httpClient <- EmberClientBuilder.default[IO].build.map(Logger.apply[IO](false, false))
       wsClient <- JdkWSClient.simple[IO].toResource
-      binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
+      binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient)(using logger).toResource
       marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
       marketDataServiceByExchange = Map(ExchangeName.Binance -> marketDataService)
       (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]

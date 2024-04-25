@@ -11,6 +11,7 @@ import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed.LegalFeedNameString
 import scala.util.Try
+import marketData.names.TradePair
 
 sealed trait MarketFeedSelectionStage {
   def view: Html[Msg] = div(selectsBackingView)
@@ -70,6 +71,13 @@ object MarketFeedSelectionStage {
                 feedNameAsPartialResult = FeedName.OrderbookFeed.apply.curried,
                 tradePairs = tradePairs
               )
+            case "Candlesticks" =>
+              SelectCurrency1(
+                previousStep = this.focus(_.enabled).replace(false),
+                exchangeSelected = exchangeSelected,
+                feedNameAsPartialResult = { currency1 => currency2 => FeedName.Candlesticks(TradePair(currency1, currency2)) },
+                tradePairs = tradePairs
+              )
             case "Stub" => this
             case _ => this
           }
@@ -78,8 +86,8 @@ object MarketFeedSelectionStage {
   }
 
   object SelectFeed {
-    type LegalFeedNameString = "Orderbook" | "Stub"
-    val feedNames: List[LegalFeedNameString] = List("Orderbook", "Stub")
+    type LegalFeedNameString = "Orderbook" | "Candlesticks" | "Stub"
+    val feedNames: List[LegalFeedNameString] = List("Orderbook", "Stub", "Candlesticks")
   }
 
   case class SelectCurrency1(

@@ -26,6 +26,9 @@ import org.http4s.client.websocket.WSFrame.Text
 import org.http4s.client.websocket.WSFrame.Binary
 import client.HttpClient
 import client.WSClient
+import marketData.names.TradePair
+import _root_.io.scalaland.chimney.syntax.*
+import _root_.io.scalaland.chimney.cats.*
 
 class Client[F[_]](
     httpClient: HttpClient[F],
@@ -45,5 +48,11 @@ class Client[F[_]](
         s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(currency1, currency2)}@depth@100ms"
       ).map(domain.OrderbookUpdate.transformer.transform)
       .evalTap(out => F.delay(println(out.lastUpdateId)))
+
+  def candlesticks(tradePair: TradePair): Stream[F, marketData.domain.Candlestick] =
+    wsClient
+      .wsConnect[dto.Candlestick](
+        s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(tradePair)}@kline_1s"
+      ).map(_.transformInto[marketData.domain.Candlestick])
 
 }

@@ -53,18 +53,18 @@ object MarketDataService {
      *   Number of users currently sharing the backing data feed
      */
     case class SignalFinalizerCount[M](
-        signal: Signal[F, M],
+        signal: Signal[F, Either[Throwable, M]],
         finalizer: F[Unit],
         subscribersCount: Int
     )
 
     val locks: F[Map[FeedName[?], Mutex[F]]] = exchangeSpecific
-      .allFeedDefs.traverse { feedDef =>
+      .allFeedNames.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
     val initSFCs: F[Map[FeedName[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeSpecific
-      .allFeedDefs.traverse { feedDef =>
+      .allFeedNames.traverse { feedDef =>
         Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
       }.map(_.toMap)
 
@@ -72,7 +72,7 @@ object MarketDataService {
       F.delay {
         TrieMap
           .from[FeedName[?], Int](
-            exchangeSpecific.allFeedDefs.map { _ -> 0 }
+            exchangeSpecific.allFeedNames.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
 
@@ -98,7 +98,10 @@ object MarketDataService {
                       // setup shared backing feed and register its signal and finalizer
                       poll(
                         exchangeSpecific
-                          .stream(feed).hold1Resource.allocated
+                          .stream(feed)
+                          .attempt // attempt & rethrow later to ensure hold1Resource does not swallow the cause
+                          .hold1Resource
+                          .allocated
                       )
                         .flatTap { case (signal, finalizer) =>
                           sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, 1)))
@@ -106,7 +109,7 @@ object MarketDataService {
                     case Some(SignalFinalizerCount(signal, finalizer, count)) =>
                       sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count + 1))).as(signal)
                   }
-                } yield updatesFromBackingFeed.discrete
+                } yield updatesFromBackingFeed.discrete.rethrow
               }
 
             def potentiallyShutdownBackingFeed = locks(feed).lock.surround {

@@ -5,31 +5,62 @@ import marketData.names.TradePair
 import marketData.names.FeedName
 import fs2.Stream
 import cats.effect.*
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import mouse.all.*
+import marketData.domain.Candlestick
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.FeedName.Candlesticks
+import marketData.names.FeedName.Stub
 
 trait ExchangeSpecific[F[_]: Async] {
   def allCurrencyPairs: List[(Currency, Currency)]
 
   def activeCurrencyPairs: F[List[TradePair]]
 
-  def allFeedDefs: List[FeedName[?]] = {
-    val allLevel2Defs: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
+  def allFeedNames: List[FeedName[?]] = {
+    val allLevel2Names: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
+    val allCandlestickNames: List[FeedName.Candlesticks] = allCurrencyPairs.map(TradePair.apply).map(FeedName.Candlesticks.apply)
 
-    allLevel2Defs // plus others
+    allLevel2Names.prependedAll(allCandlestickNames) // plus others
   }
 
   def stream[M](feedDef: FeedName[M]): Stream[F, M]
 }
 
 object ExchangeSpecific {
-  def stub[F[_]: Async]: ExchangeSpecific[F] = new ExchangeSpecific[F] {
+  // class Stub[F[_]: Async](
+  //   allCurrencyPairs: List[(Currency, Currency)] = ???,
+  //   activeCurrencyPairs: F[List[TradePair]] = ???,
+  //   allFeedNames: List[FeedName[?]] = ???,
+  //   stream[M](feedDef: FeedName[M]): Stream[F, M] = ???
+  // ) extends ExchangeSpecific[F] {
+  //   override
+  // }
 
-    override def allCurrencyPairs: List[(Currency, Currency)] = ???
+  //   override def allCurrencyPairs: List[(Currency, Currency)] = List(
+  //     Currency("BTC") -> Currency("ETH"),
+  //     Currency("BTC") -> Currency("USD")
+  //   )
 
-    override def activeCurrencyPairs: F[List[TradePair]] = ???
+  //   override def activeCurrencyPairs: F[List[TradePair]] = allCurrencyPairs.tail.map(TradePair.apply).pure
 
-    override def allFeedDefs: List[FeedName[?]] = List(new FeedName.Stub)
+  //   override def allFeedNames: List[FeedName[?]] = List(
+  //     new FeedName.Stub,
+  //     FeedName.Candlesticks(TradePair(Currency("BTC"), Currency("USD")))
+  //   )
 
-    override def stream[M](feedDef: FeedName[M]): Stream[F, M] = ???
-
-  }
+  //   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
+  //     case OrderbookFeed(currency1, currency2) => ???
+  //     case Candlesticks(_) =>
+  //       Stream.fromIterator(
+  //         iterator = Iterator.continually(
+  //           Candlestick(1, 1, 1, 1)
+  //         ),
+  //         chunkSize = 1
+  //       )
+  //     case Stub(_value) => ???
+  //   }
+  // }
 }

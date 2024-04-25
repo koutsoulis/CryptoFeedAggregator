@@ -22,6 +22,7 @@ import scodec.bits.ByteVector
 import scodec.bits.Bases.Alphabets.Base64Url
 import java.util.Locale
 import marketData.names.Currency
+import marketData.domain.Candlestick
 
 sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
   type Message = M
@@ -37,11 +38,15 @@ sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
 
 object FeedName {
   case class OrderbookFeed(currency1: Currency, currency2: Currency) extends FeedName[Orderbook] {
-    override def parametersStringForPrometheusLabelValue: String = currency1.name ++ currency2.name
+    override val parametersStringForPrometheusLabelValue: String = currency1.name ++ currency2.name
+  }
+
+  case class Candlesticks(tradePair: TradePair) extends FeedName[Candlestick] {
+    override val parametersStringForPrometheusLabelValue: String = tradePair.base.name ++ tradePair.quote.name
   }
 
   case class Stub(_value: Boolean = false) extends FeedName[Stub.Message] {
-    override def parametersStringForPrometheusLabelValue: String = "stub"
+    override val parametersStringForPrometheusLabelValue: String = "stub"
   }
 
   object Stub {

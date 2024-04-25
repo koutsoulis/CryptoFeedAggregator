@@ -31,6 +31,9 @@ import binance.dto.ExchangeInfo.SymbolPair.Status
 import marketData.names.TradePair
 import marketData.exchange.impl.binance.dto.ExchangeInfo
 import _root_.io.scalaland.chimney.syntax.*
+import marketData.names.FeedName.Candlesticks
+import marketData.exchange.impl.binance.dto.Candlestick
+import org.typelevel.log4cats.Logger
 
 trait Binance[F[_]] private (
     client2: binance.Client[F]
@@ -40,11 +43,12 @@ trait Binance[F[_]] private (
 
   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
     case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
+    case Candlesticks(tradePair) => client2.candlesticks(tradePair)
     case Stub(_value) => ???
   }
 
   // Assumption: ws market stream messages are guaranteed to arrive in order
-  def orderbookStream(level2Def: FeedName.OrderbookFeed): fs2.Stream[F, Orderbook] = level2Def match {
+  private def orderbookStream(level2Def: FeedName.OrderbookFeed): Stream[F, Orderbook] = level2Def match {
     case OrderbookFeed(currency1, currency2) =>
       /**
        * We assume there are no messages missing or out of order
@@ -79,8 +83,9 @@ object Binance {
   def streamSymbol(currency: Currency): String = currency.name.toLowerCase()
   def tradePairSymbol(c1: Currency, c2: Currency): String = symbol(c1) ++ symbol(c2)
   def streamTradePairSymbol(c1: Currency, c2: Currency): String = streamSymbol(c1) ++ streamSymbol(c2)
+  def streamTradePairSymbol(pair: TradePair): String = streamSymbol(pair.base) ++ streamSymbol(pair.quote)
 
-  def apply[F[_]](
+  def apply[F[_]: Logger](
       http4sHttpClient: http4s.client.Client[F],
       wsClient: http4s.client.websocket.WSClientHighLevel[F]
   )(
@@ -125,7 +130,6 @@ object Binance {
       override def allCurrencyPairs: List[(Currency, Currency)] =
         exchangeInfo
           .symbols
-          .filter(_.status == Status.TRADING) // TODO remove
           .map { pair => pair.baseAssetCurrency -> pair.quoteAssetCurrency }
     }
   }
