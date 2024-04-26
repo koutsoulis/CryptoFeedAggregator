@@ -4,11 +4,18 @@ import scala.collection.immutable.TreeMap
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
-import io.bullet.borer
-import io.bullet.borer.derivation.ArrayBasedCodecs.*
+import _root_.io.scalaland.chimney
+import _root_.io.scalaland.chimney.syntax.*
+import _root_.io.scalaland.chimney.cats.*
 
 final case class Orderbook(
     lastUpdateId: Long,
     bidLevelToQuantity: TreeMap[BigDecimal, BigDecimal],
     askLevelToQuantity: TreeMap[BigDecimal, BigDecimal]
-) derives borer.Codec
+)
+
+object Orderbook {
+  given chimney.Transformer[Orderbook, marketData.domain.Orderbook] =
+    chimney.Transformer.derive
+
+}

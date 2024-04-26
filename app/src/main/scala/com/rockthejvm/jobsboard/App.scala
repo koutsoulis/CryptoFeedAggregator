@@ -23,7 +23,7 @@ import fs2.Stream
 import concurrent.duration.DurationInt
 import _root_.io.bullet.borer.Cbor
 import _root_.io.bullet.borer.compat.scodec.*
-import marketData.exchange.impl.binance.domain.Orderbook
+import marketData.domain.Orderbook
 import org.http4s.client.websocket.WSFrame
 import org.http4s.QueryParamEncoder
 import marketData.names.FeedName

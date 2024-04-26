@@ -4,7 +4,7 @@ import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
 import tyrian.*
 import tyrian.Html.*
-import marketData.exchange.impl.binance.domain.Orderbook
+import marketData.domain.Orderbook
 
 object OrderbookView {
   def view(ob: Orderbook): Html[Msg] =

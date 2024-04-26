@@ -46,7 +46,7 @@ trait Binance[F[_]] private (
   }
 
   // Assumption: ws market stream messages are guaranteed to arrive in order
-  private def orderbookStream(level2Def: FeedName.OrderbookFeed): Stream[F, Orderbook] = level2Def match {
+  private def orderbookStream(level2Def: FeedName.OrderbookFeed): Stream[F, marketData.domain.Orderbook] = level2Def match {
     case OrderbookFeed(tradePair) =>
       /**
        * We assume there are no messages missing or out of order
@@ -67,7 +67,7 @@ trait Binance[F[_]] private (
           }.pull.echo
       } yield orderbookSnapshots
 
-      orderbookSnapshotsAsNestedPull.flatten.stream
+      orderbookSnapshotsAsNestedPull.flatten.stream.map(_.transformInto[marketData.domain.Orderbook])
   }
 }
 

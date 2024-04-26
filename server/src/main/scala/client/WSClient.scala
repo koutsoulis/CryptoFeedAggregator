@@ -16,7 +16,7 @@ import fs2.Stream
 import org.typelevel.log4cats.Logger
 
 trait WSClient[F[_]: Async] {
-  def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out]
+  def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessage: Option[String] = None): Stream[F, Out]
 }
 
 object WSClient {
@@ -38,7 +38,7 @@ object WSClient {
      * @param uri
      * @return
      */
-    override def wsConnect[Out: circe.Decoder](uri: String): Stream[F, Out] = {
+    override def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessage: Option[String]): Stream[F, Out] = {
       val establishWSConnection = F.bracketFull { poll =>
         Logger[F].debug(s"ws connect attempt to: $uri") *>
           F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
@@ -53,7 +53,10 @@ object WSClient {
       Stream
         .resource(
           Resource.applyFull[F, websocket.WSConnectionHighLevel[F]] { poll => poll(establishWSConnection) }
-        ).flatMap(_.receiveStream).evalMapChunk {
+        ).flatMap { conn =>
+          Stream.exec(subscriptionMessage.traverse_(conn.sendText)) ++ conn.receiveStream
+        }
+        .evalMapChunk {
           case websocket.WSFrame.Text(data, _) => F.fromEither(circe.parser.decode[Out](data))
           case _: websocket.WSFrame.Binary =>
             F.raiseError(new Exception(s"Expected text but received binary ws frame while consuming stream of $uri"))

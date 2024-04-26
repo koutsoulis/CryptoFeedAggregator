@@ -1,6 +1,6 @@
 package marketData.names
 
-import marketData.exchange.impl.binance.domain.Orderbook
+import marketData.domain.Orderbook
 import org.http4s
 import org.http4s.dsl.io.*
 import org.http4s.implicits.*

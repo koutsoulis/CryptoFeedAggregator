@@ -8,7 +8,7 @@ import cats.syntax.all.*
 import marketData.exchange.impl.Binance
 import org.http4s
 import concurrent.duration.DurationInt
-import marketData.exchange.impl.binance.domain.Orderbook
+import marketData.domain.Orderbook
 import fs2.Stream
 import marketData.names.Currency
 import org.typelevel.log4cats.slf4j.Slf4jFactory
@@ -32,8 +32,7 @@ object MarketDataServiceIT extends SimpleIOSuite {
         .stream[Orderbook](names.FeedName.OrderbookFeed(TradePair(Currency("ETH"), Currency("BTC"))))
         .metered[IO](5.seconds).take(3)
         .evalMap { ob =>
-          IO.println(ob.lastUpdateId)
-            *> IO.println(ob.askLevelToQuantity.head)
+          IO.println(ob.askLevelToQuantity.head)
         }.compile.drain
 
       res *>
