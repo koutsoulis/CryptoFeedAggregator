@@ -1,6 +1,5 @@
 package marketData.exchange.impl.coinbase
 
-import org.http4s.client.websocket.WSClientHighLevel
 import cats.effect.*
 import cats.*
 import cats.data.*
@@ -8,8 +7,10 @@ import cats.syntax.all.*
 import mouse.all.*
 import fs2.{Stream, Pull}
 import client.WSClient
+import client.HttpClient
 import marketData.names.TradePair
 import org.http4s.implicits.uri
+import org.http4s
 import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant
 import marketData.exchange.impl.coinbase.dto.Level2Message
 import _root_.io.scalaland.chimney.syntax.*
@@ -24,9 +25,13 @@ import _root_.io.circe
 import marketData.names.FeedName.OrderbookFeed
 import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
 import monocle.syntax.all.*
+import client.HttpClient.HttpClientLive
+import marketData.exchange.impl.coinbase.dto.ListProducts
+import marketData.names.Currency
 
 class Client[F[_]] private (
-    wsClient: WSClient[F]
+    wsClient: WSClient[F],
+    httpClient: HttpClient[F]
 )(using F: Async[F]) {
   private val baseURI = uri"wss://advanced-trade-ws.coinbase.com"
 
@@ -77,11 +82,25 @@ class Client[F[_]] private (
         case _unexpected => Pull.raiseError(new Exception(s"unexpected case ${_unexpected.toString().take(200)}"))
       }.stream
   }
+
+  def enabledTradePairs: F[List[TradePair]] = httpClient
+    .get[ListProducts](
+      uri = constants.advancedTradeEndpointURL.addPath("market/products").toString,
+      permitsNeeded = 1
+    ).map(_.products)
+    .map { products =>
+      products
+        .filter(!_.is_disabled).map { product => Currency(product.base_currency_id) -> Currency(product.quote_currency_id) }
+        .map(TradePair.apply)
+    }
 }
 
 object Client {
-  def apply[F[_]: Async: Logger](wsClient: WSClientHighLevel[F]): F[Client[F]] = {
-    Semaphore(constants.websocketRequestsPerSecondPerIP)
+  def apply[F[_]: Async: Logger](
+      wsClient: http4s.client.websocket.WSClientHighLevel[F],
+      http4sHttpClient: http4s.client.Client[F]
+  ): F[Client[F]] = {
+    val wsClientWrapped: F[WSClient[F]] = Semaphore(constants.websocketRequestsPerSecondPerIP)
       .map { sem =>
         RLSemaphoreAndReleaseTime(semaphore = sem, releaseTime = constants.websocketRateLimitRefreshPeriod)
       }.map { wsEstablishConnectionRL =>
@@ -90,6 +109,23 @@ object Client {
             wsClient = wsClient,
             wsEstablishConnectionRL = wsEstablishConnectionRL
           )
-      }.map { wsClient => new Client(wsClient) }
+      }
+
+    val httpClientWrapped: F[HttpClient[F]] = Semaphore(constants.httpRequestsPerSecondPerIP)
+      .map { sem =>
+        RLSemaphoreAndReleaseTime(semaphore = sem, releaseTime = constants.httpRateLimitRefreshPeriod)
+      }.map { rateLimitsData =>
+        HttpClientLive(
+          httpClient = http4sHttpClient,
+          rateLimitsData = rateLimitsData
+        )
+      }
+
+    (wsClientWrapped, httpClientWrapped).mapN { case (wsClientWrapped, httpClientWrapped) =>
+      new Client(
+        wsClient = wsClientWrapped,
+        httpClient = httpClientWrapped
+      )
+    }
   }
 }

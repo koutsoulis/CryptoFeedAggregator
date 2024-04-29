@@ -24,7 +24,7 @@ object MyProjectMain extends IOApp.Simple {
       wsClient <- JdkWSClient.simple[IO].toResource
       binance <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient)(using logger).toResource
       marketDataServiceBinance <- marketData.MarketDataService.apply[IO](binance).toResource
-      coinbase <- marketData.exchange.impl.Coinbase.apply[IO](wsClient = wsClient)(using logger).toResource
+      coinbase <- marketData.exchange.impl.Coinbase.apply[IO](wsClient, httpClient)(using logger).toResource
 
       marketDataServiceByExchange: Map[ExchangeName, MarketDataService[IO]] <-
         List(binance, coinbase)
