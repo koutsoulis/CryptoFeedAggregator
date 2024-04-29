@@ -15,24 +15,24 @@ import scala.util.Try
 import io.scalaland.chimney.partial.Result
 import scala.collection.immutable.TreeMap
 
-sealed trait WSMessage
+sealed trait Level2Message
 
-object WSMessage {
+object Level2Message {
 
-  case class Ignore(channel: "subscriptions") extends WSMessage derives circe.Decoder
+  case class Ignore(channel: "subscriptions") extends Level2Message derives circe.Decoder
 
-  given circe.Decoder[WSMessage] =
+  given circe.Decoder[Level2Message] =
     circe
       .Decoder[Ignore].or(
-        circe.Decoder[Level2Message].widen
+        circe.Decoder[Relevant].widen
       )
 
-  case class Level2Message(
-      events: List[Level2Message.Event]
-  ) extends WSMessage
+  case class Relevant(
+      events: List[Relevant.Event]
+  ) extends Level2Message
       derives circe.Decoder
 
-  object Level2Message {
+  object Relevant {
 
     case class Event(
         `type`: Event.Type,
@@ -74,30 +74,3 @@ object WSMessage {
     }
   }
 }
-
-// {
-//   "channel": "l2_data",
-//   "client_id": "",
-//   "timestamp": "2023-02-09T20:32:50.714964855Z",
-//   "sequence_num": 0,
-//   "events": [
-//     {
-//       "type": "snapshot",
-//       "product_id": "BTC-USD",
-//       "updates": [
-//         {
-//           "side": "bid",
-//           "event_time": "1970-01-01T00:00:00Z",
-//           "price_level": "21921.73",
-//           "new_quantity": "0.06317902"
-//         },
-//         {
-//           "side": "bid",
-//           "event_time": "1970-01-01T00:00:00Z",
-//           "price_level": "21921.3",
-//           "new_quantity": "0.02"
-//         },
-//       ]
-//     }
-//   ]
-// }

@@ -10,8 +10,8 @@ import fs2.{Stream, Pull}
 import client.WSClient
 import marketData.names.TradePair
 import org.http4s.implicits.uri
-import marketData.exchange.impl.coinbase.dto.WSMessage.Level2Message
-import marketData.exchange.impl.coinbase.dto.WSMessage
+import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant
+import marketData.exchange.impl.coinbase.dto.Level2Message
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Orderbook
@@ -22,7 +22,7 @@ import marketData.exchange.impl.coinbase.dto.SubscribeRequest
 import marketData.names.FeedName
 import _root_.io.circe
 import marketData.names.FeedName.OrderbookFeed
-import marketData.exchange.impl.coinbase.dto.WSMessage.Level2Message.Event.Update.Side
+import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
 import monocle.syntax.all.*
 
 class Client[F[_]] private (
@@ -41,14 +41,14 @@ class Client[F[_]] private (
       ).toString
 
     wsClient
-      .wsConnect[WSMessage](uri = baseURI.renderString, subscriptionMessage = Some(subscribeRequest))
-      .collect { case m: Level2Message => m }
+      .wsConnect[Level2Message](uri = baseURI.renderString, subscriptionMessage = Some(subscribeRequest))
+      .collect { case m: Relevant => m }
       .map(_.events)
       .flatMap(Stream.emits)
       .pull.uncons1.flatMap {
         case Some((firstEvent, subsequentEvents)) =>
           val updatesTail = subsequentEvents.evalTapChunk { event =>
-            F.raiseWhen(event.`type` != Level2Message.Event.Type.update)(
+            F.raiseWhen(event.`type` != Relevant.Event.Type.update)(
               new Exception(s"Level2Message Event of type ${event.`type`} encountered past the head")
             )
           }
