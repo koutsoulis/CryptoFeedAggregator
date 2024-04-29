@@ -54,13 +54,19 @@ object WSClient {
         .resource(
           Resource.applyFull[F, websocket.WSConnectionHighLevel[F]] { poll => poll(establishWSConnection) }
         ).flatMap { conn =>
-          Stream.exec(subscriptionMessage.traverse_(conn.sendText)) ++ conn.receiveStream
+          Stream.exec(
+            subscriptionMessage.traverse_ { message =>
+              conn.sendText(message) <* Logger[F].debug(s"subscriptionMessage: ${message.toString}")
+            }
+          ) ++ conn.receiveStream
         }
         .evalMapChunk {
-          case websocket.WSFrame.Text(data, _) => F.fromEither(circe.parser.decode[Out](data))
+          case websocket.WSFrame.Text(data, _) =>
+            Logger[F].debug(s"received ${data.take(100)} from $uri") *>
+              F.fromEither(circe.parser.decode[Out](data))
           case _: websocket.WSFrame.Binary =>
             F.raiseError(new Exception(s"Expected text but received binary ws frame while consuming stream of $uri"))
-        }.evalTapChunk { out => Logger[F].debug(s"received from $uri and decoded frame: $out") }
+        }
     }
   }
 

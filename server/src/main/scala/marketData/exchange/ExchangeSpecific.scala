@@ -12,6 +12,7 @@ import mouse.all.*
 import marketData.domain.Candlestick
 import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName.Candlesticks
+import names.ExchangeName
 
 trait ExchangeSpecific[F[_]: Async] {
   def allCurrencyPairs: List[TradePair]
@@ -26,6 +27,8 @@ trait ExchangeSpecific[F[_]: Async] {
   }
 
   def stream[M](feedDef: FeedName[M]): Stream[F, M]
+
+  def name: ExchangeName
 }
 
 object ExchangeSpecific {

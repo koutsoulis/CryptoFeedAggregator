@@ -12,13 +12,13 @@ lazy val catsEffectVersion = "3.5.3"
 lazy val http4sVersion = "0.23.25"
 lazy val http4sBlazeVersion = "0.23.16"
 lazy val http4sJDKClientVersion = "0.9.1"
-lazy val circeVersion = "0.14.0"
+lazy val circeVersion = "0.14.7"
 lazy val jsoniterVersion = "2.28.4"
 lazy val tapirVersion = "1.9.6"
 lazy val monocleVersion = "3.2.0"
 lazy val spireVersion = "0.18.0"
 lazy val fs2Version = "3.10.2"
-lazy val chimneyVersion = "0.8.3"
+lazy val chimneyVersion = "0.8.5"
 
 lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(

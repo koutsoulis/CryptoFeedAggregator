@@ -33,6 +33,7 @@ import _root_.io.scalaland.chimney.syntax.*
 import marketData.names.FeedName.Candlesticks
 import marketData.exchange.impl.binance.dto.Candlestick
 import org.typelevel.log4cats.Logger
+import names.ExchangeName
 
 trait Binance[F[_]] private (
     client2: binance.Client[F]
@@ -114,6 +115,8 @@ object Binance {
             )
         )
     } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient)) {
+
+      override def name: ExchangeName = ExchangeName.Binance
 
       override def activeCurrencyPairs: F[List[TradePair]] =
         binanceHttpClient

@@ -1,7 +1,7 @@
 package names
 
 enum ExchangeName {
-  case Binance
+  case Binance, Coinbase
 }
 
 object ExchangeName {

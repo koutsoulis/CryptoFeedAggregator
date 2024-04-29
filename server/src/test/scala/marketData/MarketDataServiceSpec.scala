@@ -15,10 +15,13 @@ import marketData.names.FeedName.Candlesticks
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import marketData.domain.Candlestick
+import _root_.names.ExchangeName
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
     val backingStreams = new ExchangeSpecific[IO] {
+
+      override def name: ExchangeName = ExchangeName.Binance
 
       override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
 
@@ -63,6 +66,8 @@ object MarketDataServiceSpec extends SimpleIOSuite {
     MarketDataService
       .apply(
         new ExchangeSpecific {
+
+          override def name: ExchangeName = ExchangeName.Binance
 
           override def allCurrencyPairs: List[TradePair] = List(Currency("BTC") -> Currency("ETH")).map(TradePair.apply)
 

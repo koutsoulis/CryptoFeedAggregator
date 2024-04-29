@@ -10,37 +10,71 @@ import fs2.{Stream, Pull}
 import client.WSClient
 import marketData.names.TradePair
 import org.http4s.implicits.uri
-import marketData.exchange.impl.coinbase.dto.Level2Message
-import marketData.exchange.impl.coinbase.dto.Level2Message.Snapshot
-import marketData.exchange.impl.coinbase.dto.Level2Message.L2Update
+import marketData.exchange.impl.coinbase.dto.WSMessage.Level2Message
+import marketData.exchange.impl.coinbase.dto.WSMessage
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Orderbook
 import client.rateLimits.RLSemaphoreAndReleaseTime
 import cats.effect.std.Semaphore
 import org.typelevel.log4cats.Logger
+import marketData.exchange.impl.coinbase.dto.SubscribeRequest
+import marketData.names.FeedName
+import _root_.io.circe
+import marketData.names.FeedName.OrderbookFeed
+import marketData.exchange.impl.coinbase.dto.WSMessage.Level2Message.Event.Update.Side
+import monocle.syntax.all.*
 
 class Client[F[_]] private (
     wsClient: WSClient[F]
 )(using F: Async[F]) {
-  private val baseURI = uri"http:/example.com/page"
+  private val baseURI = uri"wss://advanced-trade-ws.coinbase.com"
 
-  def orderbook(tradePair: TradePair): Stream[F, marketData.domain.Orderbook] = {
-    val subscriptionMessage: String = ???
+  def orderbook(feedName: OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
+
+    val subscribeRequest = circe
+      .Encoder.apply[SubscribeRequest].apply(
+        SubscribeRequest(
+          feedName = feedName,
+          channel = "level2"
+        )
+      ).toString
 
     wsClient
-      .wsConnect[Level2Message](uri = baseURI.renderString, subscriptionMessage = Some(subscriptionMessage))
+      .wsConnect[WSMessage](uri = baseURI.renderString, subscriptionMessage = Some(subscribeRequest))
+      .collect { case m: Level2Message => m }
+      .map(_.events)
+      .flatMap(Stream.emits)
       .pull.uncons1.flatMap {
-        case Some((headSnapshot @ Snapshot(_, _)) -> tail) =>
-          val tailEnsuringAllAreUpdates: Stream[F, L2Update] = tail.evalMapChunk {
-            case update: L2Update => F.pure(update)
-            case _else => F.raiseError(new Exception(s"expected ${L2Update.toString}, got $_else"))
+        case Some((firstEvent, subsequentEvents)) =>
+          val updatesTail = subsequentEvents.evalTapChunk { event =>
+            F.raiseWhen(event.`type` != Level2Message.Event.Type.update)(
+              new Exception(s"Level2Message Event of type ${event.`type`} encountered past the head")
+            )
           }
-          tailEnsuringAllAreUpdates
-            .scan[Orderbook](headSnapshot.transformInto[Orderbook]) { case (snapshot, update) =>
-              update.apply(snapshot)
-            }.pull.echo
-        case _ => Pull.raiseError(new Exception(s"Level2 incoming websocket stream should start with a Snapshot message"))
+          val orderbooksStream = firstEvent.toOrderbook match {
+            case Left(exception) => Stream.raiseError(exception)
+            case Right(orderbook) =>
+              updatesTail.scan(orderbook) { case (orderbook, updateEvent) =>
+                updateEvent.updates.foldLeft(orderbook) { case (orderbook, update) =>
+                  update.side match {
+                    case Side.bid =>
+                      orderbook
+                        .focus(_.bidLevelToQuantity).modify(_.updatedWith(update.price_level) { _ =>
+                          Some(update.new_quantity).filter(_ > 0)
+                        })
+                    case Side.offer =>
+                      orderbook
+                        .focus(_.askLevelToQuantity).modify(_.updatedWith(update.price_level) { _ =>
+                          Some(update.new_quantity).filter(_ > 0)
+                        })
+                  }
+                }
+              }
+          }
+          orderbooksStream.pull.echo
+
+        case _unexpected => Pull.raiseError(new Exception(s"unexpected case ${_unexpected.toString().take(200)}"))
       }.stream
   }
 }
@@ -59,40 +93,3 @@ object Client {
       }.map { wsClient => new Client(wsClient) }
   }
 }
-
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import java.util.Base64
-
-object HmacSha256Signer {
-  def createSignature(cbAccessTimestamp: String, method: String, requestPath: String, secret: String): String = {
-    // Concatenate required parts to create the prehash string
-    val message = s"$cbAccessTimestamp$method$requestPath"
-
-    // Decode the Base64 secret to use as the key
-    val secretDecodedBytes = Base64.getDecoder.decode(secret)
-    val keySpec = new SecretKeySpec(secretDecodedBytes, "HmacSHA256")
-
-    // Initialize the MAC with SHA256
-    val hmacSha256 = Mac.getInstance("HmacSHA256")
-    hmacSha256.init(keySpec)
-
-    // Sign the message with the HMAC and Base64 encode the result
-    val signatureBytes = hmacSha256.doFinal(message.getBytes("UTF-8"))
-    val signatureBase64 = Base64.getEncoder.encodeToString(signatureBytes)
-
-    signatureBase64
-  }
-}
-
-// Example usage:
-// object Main extends App {
-//   val cbAccessTimestamp = "YOUR_TIMESTAMP"
-//   val method = "POST" // GET, POST, DELETE, etc.
-//   val requestPath = "/orders"
-//   val body = "{\"price\": \"1.0\",\"size\": \"0.01\",\"side\": \"buy\",\"product_id\": \"BTC-USD\"}"
-//   val secret = "YOUR_SECRET"
-
-//   val signature = HmacSha256Signer.createSignature(cbAccessTimestamp, method, requestPath, body, secret)
-//   println(s"Signature: $signature")
-// }

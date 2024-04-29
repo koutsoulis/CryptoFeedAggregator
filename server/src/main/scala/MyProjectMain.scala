@@ -11,19 +11,29 @@ import cats.syntax.all.*
 import myMetrics.MyMetrics
 import names.ExchangeName
 import org.http4s.client.middleware.Logger
+import _root_.server.Server
+import marketData.exchange.ExchangeSpecific
+import marketData.MarketDataService
 
 object MyProjectMain extends IOApp.Simple {
   override def run: IO[Unit] = {
     implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
-    val serverResource = for {
+    val serverResource: Resource[IO, Server[IO]] = for {
       logger <- loggerFactory.create.toResource
       httpClient <- EmberClientBuilder.default[IO].build.map(Logger.apply[IO](false, false))
       wsClient <- JdkWSClient.simple[IO].toResource
-      binanceSpecific <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient)(using logger).toResource
-      marketDataService <- marketData.MarketDataService.apply[IO](binanceSpecific).toResource
-      marketDataServiceByExchange = Map(ExchangeName.Binance -> marketDataService)
+      binance <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient)(using logger).toResource
+      marketDataServiceBinance <- marketData.MarketDataService.apply[IO](binance).toResource
+      coinbase <- marketData.exchange.impl.Coinbase.apply[IO](wsClient = wsClient)(using logger).toResource
+
+      marketDataServiceByExchange: Map[ExchangeName, MarketDataService[IO]] <-
+        List(binance, coinbase)
+          .traverse { exchange =>
+            marketData.MarketDataService.apply[IO](exchange).map(exchange.name -> _)
+          }.toResource.map(_.toMap)
+
       (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]
-      server <- _root_.server.Server[IO](marketDataServiceByExchange, metricsExporter, metricsRegister)
+      server <- Server[IO](marketDataServiceByExchange, metricsExporter, metricsRegister)
     } yield server
 
     serverResource.useForever.as(())
