@@ -62,7 +62,7 @@ object WSClient {
         }
         .evalMapChunk {
           case websocket.WSFrame.Text(data, _) =>
-            Logger[F].debug(s"received ${data.take(100)} from $uri") *>
+            Logger[F].debug(s"received ${data.take(200)} from $uri") *>
               F.fromEither(circe.parser.decode[Out](data))
           case _: websocket.WSFrame.Binary =>
             F.raiseError(new Exception(s"Expected text but received binary ws frame while consuming stream of $uri"))

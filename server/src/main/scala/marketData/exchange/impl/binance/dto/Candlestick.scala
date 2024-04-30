@@ -13,6 +13,7 @@ final case class Candlestick(
 
 object Candlestick {
   final case class K(
+      t: Long, // Kline start time
       o: BigDecimal, // Open price
       c: BigDecimal, // Close price
       h: BigDecimal, // High price
@@ -21,6 +22,7 @@ object Candlestick {
 
   given chimney.Transformer[Candlestick, domain.Candlestick] = chimney
     .Transformer.define[Candlestick, domain.Candlestick]
+    .withFieldComputed(_.startTimeInMsSinceUnixEpoch, _.k.t.toString)
     .withFieldRenamed(_.k.c, _.close)
     .withFieldRenamed(_.k.h, _.high)
     .withFieldRenamed(_.k.o, _.open)

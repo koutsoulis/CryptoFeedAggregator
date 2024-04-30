@@ -11,6 +11,7 @@ object CandlestickView {
     div()(
       h2()("Candlestick Data"),
       ul()(
+        li()("Millis since unix epoch: " + candlestick.startTimeInMsSinceUnixEpoch),
         li()("Open: " + candlestick.open.toString),
         li()("Close: " + candlestick.close.toString),
         li()("High: " + candlestick.high.toString),

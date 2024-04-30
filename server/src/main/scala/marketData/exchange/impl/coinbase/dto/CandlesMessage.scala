@@ -28,7 +28,7 @@ object CandlesMessage {
 
     object Event {
       case class Candle(
-          start: Long,
+          start: String,
           high: BigDecimal,
           low: BigDecimal,
           open: BigDecimal,
@@ -36,7 +36,10 @@ object CandlesMessage {
       ) derives circe.Decoder
 
       object Candle {
-        given chimney.Transformer[Candle, Candlestick] = chimney.Transformer.define[Candle, Candlestick].buildTransformer
+        given chimney.Transformer[Candle, Candlestick] = chimney
+          .Transformer.define[Candle, Candlestick]
+          .withFieldRenamed(_.start, _.startTimeInMsSinceUnixEpoch)
+          .buildTransformer
       }
     }
   }
