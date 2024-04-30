@@ -12,21 +12,31 @@ case class SubscribeRequest private (
     `type`: String,
     product_ids: List[String],
     channel: SubscribeRequest.Channel
-) derives circe.Encoder.AsObject
+) derives circe.Encoder
 
 object SubscribeRequest {
-  type Channel = "level2" | Nothing
+  enum Channel {
+    case level2, candles
+  }
+
+  object Channel {
+    given circe.Encoder[Channel] = circe.Encoder[String].contramap[Channel](_.toString)
+  }
 
   def apply(
-      feedName: FeedName[?],
-      channel: Channel
+      feedName: FeedName[?]
   ): SubscribeRequest = feedName match {
     case OrderbookFeed(tradePair) =>
       SubscribeRequest(
         `type` = "subscribe",
         product_ids = List(constants.product_ids(tradePair)),
-        channel = channel
+        channel = Channel.level2
       )
-    case Candlesticks(tradePair) => ???
+    case Candlesticks(tradePair) =>
+      SubscribeRequest(
+        `type` = "subscribe",
+        product_ids = List(constants.product_ids(tradePair)),
+        channel = Channel.candles
+      )
   }
 }

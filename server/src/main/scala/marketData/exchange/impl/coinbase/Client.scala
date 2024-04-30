@@ -22,7 +22,6 @@ import org.typelevel.log4cats.Logger
 import marketData.exchange.impl.coinbase.dto.SubscribeRequest
 import marketData.names.FeedName
 import _root_.io.circe
-import marketData.names.FeedName.OrderbookFeed
 import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
 import monocle.syntax.all.*
 import client.HttpClient.HttpClientLive
@@ -33,20 +32,17 @@ class Client[F[_]] private (
     wsClient: WSClient[F],
     httpClient: HttpClient[F]
 )(using F: Async[F]) {
-  private val baseURI = uri"wss://advanced-trade-ws.coinbase.com"
-
-  def orderbook(feedName: OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
+  def orderbook(feedName: FeedName.OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
 
     val subscribeRequest = circe
       .Encoder.apply[SubscribeRequest].apply(
         SubscribeRequest(
-          feedName = feedName,
-          channel = "level2"
+          feedName = feedName
         )
       ).toString
 
     wsClient
-      .wsConnect[Level2Message](uri = baseURI.renderString, subscriptionMessage = Some(subscribeRequest))
+      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint.renderString, subscriptionMessage = Some(subscribeRequest))
       .collect { case m: Relevant => m }
       .map(_.events)
       .flatMap(Stream.emits)
@@ -81,6 +77,26 @@ class Client[F[_]] private (
 
         case _unexpected => Pull.raiseError(new Exception(s"unexpected case ${_unexpected.toString().take(200)}"))
       }.stream
+  }
+
+  def candlesticks(feedName: FeedName.Candlesticks): Stream[F, marketData.domain.Candlestick] = {
+    val subscribeRequest = circe
+      .Encoder.apply[SubscribeRequest].apply(
+        SubscribeRequest(
+          feedName = feedName
+        )
+      ).toString
+
+    wsClient
+      .wsConnect[dto.CandlesMessage](
+        uri = constants.advancedTradeWebSocketEndpoint.renderString,
+        subscriptionMessage = Some(subscribeRequest)
+      ).collect { case relevant: dto.CandlesMessage.Relevant => relevant }
+      .map(_.events.lastOption) // if more than one, consider all but last one out of date
+      .flattenOption
+      .map(_.candles.lastOption) // if more than one, consider all but last one out of date
+      .flattenOption
+      .map(_.transformInto[marketData.domain.Candlestick])
   }
 
   def enabledTradePairs: F[List[TradePair]] = httpClient

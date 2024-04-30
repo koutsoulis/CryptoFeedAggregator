@@ -19,7 +19,7 @@ import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import marketData.exchange.impl.coinbase.dto.ListProducts
 
-trait Coinbase[F[_]: Async] extends ExchangeSpecific[F] {}
+trait Coinbase[F[_]: Async] extends ExchangeSpecific[F]
 
 object Coinbase {
   class CoinbaseLive[F[_]: Async] private[Coinbase] (
@@ -30,7 +30,7 @@ object Coinbase {
 
     override def stream[M](feedDef: FeedName[M]): fs2.Stream[F, M] = feedDef match {
       case feedName: OrderbookFeed => client.orderbook(feedName)
-      case Candlesticks(tradePair) => ???
+      case feedName: Candlesticks => client.candlesticks(feedName)
     }
 
     override def name: ExchangeName = ExchangeName.Coinbase

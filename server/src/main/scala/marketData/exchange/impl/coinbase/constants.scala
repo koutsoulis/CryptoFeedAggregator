@@ -14,6 +14,10 @@ object constants {
   val websocketRateLimitRefreshPeriod: FiniteDuration = 1.second
   def product_ids(tradePair: TradePair): String = tradePair.base.name ++ "-" ++ tradePair.quote.name
 
+  // 30 April 2024
+  // https://docs.cloud.coinbase.com/advanced-trade/docs/ws-overview
+  val advancedTradeWebSocketEndpoint = uri"wss://advanced-trade-ws.coinbase.com"
+
   // 29 April 2024
   // https://docs.cloud.coinbase.com/advanced-trade/docs/rest-api-overview
   val advancedTradeEndpointURL: Uri = uri"https://api.coinbase.com/api/v3/brokerage"
