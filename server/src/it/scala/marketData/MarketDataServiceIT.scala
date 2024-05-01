@@ -14,17 +14,19 @@ import marketData.names.Currency
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.log4cats.Logger
 import marketData.names.TradePair
+import myMetrics.MyMetrics
 
 object MarketDataServiceIT extends SimpleIOSuite {
   val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
   given Logger[IO] = loggerFactory.getLogger
-  val mdService: Resource[IO, MarketDataService[IO]] = {
-    (http4s.ember.client.EmberClientBuilder.default.build, Resource.eval(http4s.jdkhttpclient.JdkWSClient.simple))
-      .flatMapN { (httpClient, wsClient) =>
-        Resource.eval(Binance.apply[IO](httpClient, wsClient))
-      }
-      .evalMap(MarketDataService.apply(_, ???))
-  }
+
+  val mdService = for {
+    httpClient <- http4s.ember.client.EmberClientBuilder.default.build
+    wsClient <- Resource.eval(http4s.jdkhttpclient.JdkWSClient.simple)
+    (_, _, incomingConcurrentStreamsGauge) <- MyMetrics.stub
+    exchange <- Resource.eval(Binance.apply[IO](httpClient, wsClient))
+    mdService <- Resource.eval(MarketDataService.apply(exchange, incomingConcurrentStreamsGauge))
+  } yield mdService
 
   test("bs test") {
     mdService.use { mdService =>
