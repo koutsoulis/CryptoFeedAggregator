@@ -153,7 +153,7 @@ lazy val server = (project in file("server"))
       "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       // "org.slf4j" % "slf4j-simple" % slf4jVersion,
-      "org.typelevel" %% "log4cats-noop" % log4catsVersion % Test,
+      "org.typelevel" %% "log4cats-noop" % log4catsVersion,
       // "org.scalameta" %% "munit" % munitVersion % Test,
       // "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % "test",
       "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % "it,test",

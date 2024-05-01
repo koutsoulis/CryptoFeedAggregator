@@ -16,10 +16,11 @@ import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import marketData.domain.Candlestick
 import _root_.names.ExchangeName
+import myMetrics.MyMetrics
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
-    val backingStreams = new ExchangeSpecific[IO] {
+    val backingStreams: ExchangeSpecific[IO] = new ExchangeSpecific[IO] {
 
       override def name: ExchangeName = ExchangeName.Binance
 
@@ -34,7 +35,7 @@ object MarketDataServiceSpec extends SimpleIOSuite {
         case _: OrderbookFeed => ???
         case Candlesticks(tradePair) =>
           Stream.eval(ref.update(_ + 1)) >>
-            Stream.fromIterator(Iterator.continually(Candlestick(1, 1, 1, 1)), 1)
+            Stream.fromIterator(Iterator.continually(Candlestick("0", 1, 1, 1, 1)), 1)
       }
 
     }
@@ -43,13 +44,15 @@ object MarketDataServiceSpec extends SimpleIOSuite {
   }
 
   test("reuses the backing stream when two requests overlap") {
-    for {
-      (bStreams, callCount) <- backingStreamsAndCallCount
-      marketDataService <- MarketDataService.apply(bStreams)
-      requestStubDatafeed = marketDataService.stream(bStreams.allFeedNames.head)
-      _ <- requestStubDatafeed.zip(requestStubDatafeed).take(10).compile.toList.map(print)
-      callCountV <- callCount.get
-    } yield expect(callCountV == 1)
+    MyMetrics.stub[IO].use { case (_, _, incomingConcurrentStreamsGauge) =>
+      for {
+        (bStreams, callCount) <- backingStreamsAndCallCount
+        marketDataService <- MarketDataService.apply(bStreams, ???)
+        requestStubDatafeed = marketDataService.stream(bStreams.allFeedNames.head)
+        _ <- requestStubDatafeed.zip(requestStubDatafeed).take(10).compile.toList.map(print)
+        callCountV <- callCount.get
+      } yield expect(callCountV == 1)
+    }
   }
 
   test("preserves error thrown by Exchange service") {
@@ -63,23 +66,26 @@ object MarketDataServiceSpec extends SimpleIOSuite {
 
     val errorFromExchangeService = new Exception("error from Exchange service")
 
-    MarketDataService
-      .apply(
-        new ExchangeSpecific {
+    MyMetrics.stub[IO].use { case (_, _, incomingConcurrentStreamsGauge) =>
+      MarketDataService
+        .apply(
+          exchangeSpecific = new ExchangeSpecific {
 
-          override def name: ExchangeName = ExchangeName.Binance
+            override def name: ExchangeName = ExchangeName.Binance
 
-          override def allCurrencyPairs: List[TradePair] = List(Currency("BTC") -> Currency("ETH")).map(TradePair.apply)
+            override def allCurrencyPairs: List[TradePair] = List(Currency("BTC") -> Currency("ETH")).map(TradePair.apply)
 
-          override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
+            override def activeCurrencyPairs: IO[List[TradePair]] = allCurrencyPairs.pure
 
-          override def stream[M](feedDef: FeedName[M]): Stream[IO, M] = Stream.raiseError(errorFromExchangeService)
+            override def stream[M](feedDef: FeedName[M]): Stream[IO, M] = Stream.raiseError(errorFromExchangeService)
+          },
+          incomingConcurrentStreamsGauge = incomingConcurrentStreamsGauge
+        ).flatMap(
+          _.stream(FeedName.Candlesticks(TradePair(Currency("BTC"), Currency("ETH"))))
+            .compile.drain.attempt
+        ).map { outcome =>
+          expect(outcome.swap.toOption.contains(errorFromExchangeService))
         }
-      ).flatMap(
-        _.stream(FeedName.Candlesticks(TradePair(Currency("BTC"), Currency("ETH"))))
-          .compile.drain.attempt
-      ).map { outcome =>
-        expect(outcome.swap.toOption.contains(errorFromExchangeService))
-      }
+    }
   }
 }

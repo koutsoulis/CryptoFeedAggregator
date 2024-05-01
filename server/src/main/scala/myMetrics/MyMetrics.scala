@@ -18,7 +18,9 @@ import org.typelevel.log4cats.Logger
 import marketData.names.FeedName
 import marketData.names.FeedName.OrderbookFeed
 import org.typelevel.log4cats.slf4j.Slf4jFactory
+import org.typelevel.log4cats.noop.NoOpLogger
 import names.ExchangeName
+import myMetrics.impl.ConcurrentStreamsGaugeFactory
 
 object MyMetrics {
 
@@ -26,43 +28,58 @@ object MyMetrics {
     def metricsRoute: HttpRoutes[F]
   }
 
-  trait Register[F[_]] {
-    def outgoingConcurrentStreams: Gauge[F, Long, (ExchangeName, FeedName[?])]
+  trait OutgoingConcurrentStreamsGauge[F[_]] {
+    def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
   }
 
-  def apply[F[_]: Async: Slf4jFactory]: Resource[F, (Exporter[F], Register[F])] = {
+  trait IncomingConcurrentStreamsGauge[F[_]] {
+    def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
+  }
+
+  private def applyImpl[F[_]: Async: Logger](stubMetricFactory: Option[MetricFactory[F]] = None)
+      : Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] = {
     for {
       registry <- Prometheus.collectorRegistry
-      logger <- Resource.eval(Slf4jFactory[F].create)
-      p4catsJavaMetricRegistry <- JavaMetricRegistry.Builder().withRegistry(registry).build(using Async[F], logger)
-      metricsFactory = MetricFactory.builder.build(p4catsJavaMetricRegistry)
-      outgoingConcurrentStreamsDefinition <- metricsFactory
-        .gauge("concurrent_outgoing_streams").ofLong.help("concurrent outgoing streams indexed by Exchange and FeedDefinition")
-        .labels[(ExchangeName, FeedName[?])](
-          Label.Name("exchange") -> { case (exchange, _) =>
-            exchange.toString()
-          },
-          Label.Name("feed_definition") -> { case (_, fd) =>
-            fd.nameWithoutParametersForPrometheusLabelValue
-          },
-          Label.Name("parameters") -> { case (_, fd) =>
-            fd.parametersStringForPrometheusLabelValue
-          }
-        ).build
+      p4catsJavaMetricRegistry <- JavaMetricRegistry.Builder().withRegistry(registry).build
+      metricsFactory = stubMetricFactory.getOrElse(MetricFactory.builder.build(p4catsJavaMetricRegistry))
+      concurrentStreamsGaugeDefinition = new ConcurrentStreamsGaugeFactory[F]
+      outgoingConcurrentStreamsGaugeImpl <-
+        concurrentStreamsGaugeDefinition.make(
+          metricsFactory = metricsFactory,
+          name = "concurrent_outgoing_streams",
+          helpStringForMetric = "concurrent outgoing streams indexed by Exchange and FeedDefinition"
+        )
+
+      incomingConcurrentStreamsGaugeImpl <-
+        concurrentStreamsGaugeDefinition.make(
+          metricsFactory = metricsFactory,
+          name = "concurrent_incoming_streams",
+          helpStringForMetric = "number of concurrent streams from Exchange to Server"
+        )
     } yield {
       val exporter = new Exporter[F] {
 
-        override def metricsRoute: HttpRoutes[F] = PrometheusExportService.service(registry)
+        override val metricsRoute: HttpRoutes[F] = PrometheusExportService.service(registry)
 
       }
 
-      val register = new Register[F] {
+      val outgoingConcurrentStreamsGauge = new OutgoingConcurrentStreamsGauge[F] {
 
-        override def outgoingConcurrentStreams: Gauge[F, Long, (ExchangeName, FeedName[?])] = outgoingConcurrentStreamsDefinition
+        override val value: Gauge[F, Long, (ExchangeName, FeedName[?])] = outgoingConcurrentStreamsGaugeImpl
 
       }
 
-      (exporter, register)
+      val incomingConcurrentStreamsGauge = new IncomingConcurrentStreamsGauge[F] {
+        override val value: Gauge[F, Long, (ExchangeName, FeedName[?])] = incomingConcurrentStreamsGaugeImpl
+      }
+
+      (exporter, outgoingConcurrentStreamsGauge, incomingConcurrentStreamsGauge)
     }
   }
+
+  def apply[F[_]: Async: Logger]: Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] =
+    applyImpl()
+
+  def stub[F[_]: Async]: Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] =
+    applyImpl(stubMetricFactory = Some(MetricFactory.noop[F]))(using Async[F], NoOpLogger.apply)
 }

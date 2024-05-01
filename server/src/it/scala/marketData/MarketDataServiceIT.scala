@@ -23,7 +23,7 @@ object MarketDataServiceIT extends SimpleIOSuite {
       .flatMapN { (httpClient, wsClient) =>
         Resource.eval(Binance.apply[IO](httpClient, wsClient))
       }
-      .evalMap(MarketDataService.apply)
+      .evalMap(MarketDataService.apply(_, ???))
   }
 
   test("bs test") {

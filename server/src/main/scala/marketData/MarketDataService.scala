@@ -23,6 +23,7 @@ import org.http4s.jdkhttpclient.JdkWSClient
 import cats.effect.std.Queue
 import marketData.names.TradePair
 import names.FeedName
+import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
 
 trait MarketDataService[F[_]] {
   def stream[Message](feed: FeedName[Message]): Stream[F, Message]
@@ -39,7 +40,10 @@ object MarketDataService {
    * @param F
    * @return
    */
-  def apply[F[_]](exchangeSpecific: ExchangeSpecific[F])(using F: Async[F]): F[MarketDataService[F]] = {
+  def apply[F[_]](
+      exchangeSpecific: ExchangeSpecific[F],
+      incomingConcurrentStreamsGauge: IncomingConcurrentStreamsGauge[F]
+  )(using F: Async[F]): F[MarketDataService[F]] = {
 
     /**
      * Triple containing what we need to share a data feed among multiple subscribers.
@@ -96,8 +100,7 @@ object MarketDataService {
                     case None =>
                       // setup shared backing feed and register its signal and finalizer
                       poll(
-                        exchangeSpecific
-                          .stream(feed)
+                        backingStreamWrappedInPrometheusMetric(feed)
                           .attempt // attempt & rethrow later to ensure hold1Resource does not swallow the cause
                           .hold1Resource
                           .allocated
@@ -111,29 +114,34 @@ object MarketDataService {
                 } yield updatesFromBackingFeed.discrete.rethrow
               }
 
-            def potentiallyShutdownBackingFeed = locks(feed).lock.surround {
-              for {
-                sfcRef <- sfc(feed)
-                SignalFinalizerCount(signal, finalizer, count) <- sfcRef
-                  .get.map(_.toRight(new Exception("SignalFinalizerCount Map was expected to contain an entry at time of release"))).rethrow
-                _ <-
-                  if (count == 1) {
-                    finalizer *> sfcRef.set(None)
-                  } else {
-                    sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count - 1)))
-                  }
-              } yield ()
-            }
+              def potentiallyShutdownBackingFeed = locks(feed).lock.surround {
+                for {
+                  sfcRef <- sfc(feed)
+                  SignalFinalizerCount(signal, finalizer, count) <- sfcRef
+                    .get.map(
+                      _.toRight(new Exception("SignalFinalizerCount Map was expected to contain an entry at time of release"))).rethrow
+                  _ <-
+                    if (count == 1) {
+                      finalizer *> sfcRef.set(None)
+                    } else {
+                      sfcRef.set(Some(SignalFinalizerCount(signal, finalizer, count - 1)))
+                    }
+                } yield ()
+              }
 
-            Stream
-              .bracketFull(
-                acquire = listenToAndPotentiallySetupBackingFeed
-              )(
-                release = (_, _) => potentiallyShutdownBackingFeed
-              ).flatten
+              Stream
+                .bracketFull(
+                  acquire = listenToAndPotentiallySetupBackingFeed
+                )(
+                  release = (_, _) => potentiallyShutdownBackingFeed
+                ).flatten
           }
 
           override def activeCurrencyPairs: F[List[TradePair]] = exchangeSpecific.activeCurrencyPairs
+
+          private def backingStreamWrappedInPrometheusMetric(feed: FeedName[?]): Stream[F, feed.Message] = Stream.bracket(
+            incomingConcurrentStreamsGauge.value.inc(exchangeSpecific.name -> feed)
+          )(_ => incomingConcurrentStreamsGauge.value.dec(exchangeSpecific.name -> feed)) >> exchangeSpecific.stream(feed)
         }
     }
 

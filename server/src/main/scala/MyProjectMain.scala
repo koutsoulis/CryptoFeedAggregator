@@ -23,17 +23,16 @@ object MyProjectMain extends IOApp.Simple {
       httpClient <- EmberClientBuilder.default[IO].build.map(Logger.apply[IO](false, false))
       wsClient <- JdkWSClient.simple[IO].toResource
       binance <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient)(using logger).toResource
-      marketDataServiceBinance <- marketData.MarketDataService.apply[IO](binance).toResource
       coinbase <- marketData.exchange.impl.Coinbase.apply[IO](wsClient, httpClient)(using logger).toResource
-
+      (metricsExporter, outgoingConcurrentStreamsGauge, incomingConcurrentStreamsGauge) <- MyMetrics.apply[IO](using Async[IO], logger)
       marketDataServiceByExchange: Map[ExchangeName, MarketDataService[IO]] <-
         List(binance, coinbase)
           .traverse { exchange =>
-            marketData.MarketDataService.apply[IO](exchange).map(exchange.name -> _)
+            marketData
+              .MarketDataService.apply[IO](exchange, incomingConcurrentStreamsGauge).map(exchange.name -> _)
           }.toResource.map(_.toMap)
 
-      (metricsExporter, metricsRegister) <- MyMetrics.apply[IO]
-      server <- Server[IO](marketDataServiceByExchange, metricsExporter, metricsRegister)
+      server <- Server[IO](marketDataServiceByExchange, metricsExporter, outgoingConcurrentStreamsGauge)
     } yield server
 
     serverResource.useForever.as(())

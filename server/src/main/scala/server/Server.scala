@@ -41,7 +41,7 @@ object Server {
   def apply[F[_]: Async: Network](
       marketDataServiceByExchange: ExchangeName => MarketDataService[F],
       metricsExporter: MyMetrics.Exporter[F],
-      metricsRegister: MyMetrics.Register[F]
+      metricsRegister: MyMetrics.OutgoingConcurrentStreamsGauge[F]
   ): Resource[F, Server[F]] = {
     http4s
       .ember.server.EmberServerBuilder.default
@@ -55,8 +55,8 @@ object Server {
                 .map(WebSocketFrame.Binary.apply(_))
 
               Stream.eval(Async[F].delay(println(s"STREAM REQUEST RECEIVED -------------------------${feedName.toString()}"))) >>
-                Stream.bracket(metricsRegister.outgoingConcurrentStreams.inc(1, exchange -> feedName)) { _ =>
-                  metricsRegister.outgoingConcurrentStreams.dec(1, exchange -> feedName)
+                Stream.bracket(metricsRegister.value.inc(1, exchange -> feedName)) { _ =>
+                  metricsRegister.value.dec(1, exchange -> feedName)
                 } >>
                 messagesFromClient
                   .zipRight(messagesToClient)
