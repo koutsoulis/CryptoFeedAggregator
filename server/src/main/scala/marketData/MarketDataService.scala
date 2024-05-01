@@ -26,7 +26,7 @@ import names.FeedName
 import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
 
 trait MarketDataService[F[_]] {
-  def stream[Message](feed: FeedName[Message]): Stream[F, Message]
+  def stream(feed: FeedName[?]): Stream[F, feed.Message]
   def activeCurrencyPairs: F[List[TradePair]]
 }
 
@@ -90,7 +90,7 @@ object MarketDataService {
 
         new MarketDataService[F] {
 
-          override def stream[Message](feed: FeedName[Message]): Stream[F, Message] = {
+          override def stream(feed: FeedName[?]): Stream[F, feed.Message] = {
             def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
               locks(feed).lock.surround {
                 for {

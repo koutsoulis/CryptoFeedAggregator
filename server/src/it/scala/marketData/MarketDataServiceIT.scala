@@ -29,7 +29,7 @@ object MarketDataServiceIT extends SimpleIOSuite {
   test("bs test") {
     mdService.use { mdService =>
       val res: IO[Unit] = mdService
-        .stream[Orderbook](names.FeedName.OrderbookFeed(TradePair(Currency("ETH"), Currency("BTC"))))
+        .stream(names.FeedName.OrderbookFeed(TradePair(Currency("ETH"), Currency("BTC"))))
         .metered[IO](5.seconds).take(3)
         .evalMap { ob =>
           IO.println(ob.askLevelToQuantity.head)
