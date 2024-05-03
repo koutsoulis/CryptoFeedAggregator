@@ -34,15 +34,14 @@ class Client[F[_]] private (
 )(using F: Async[F]) {
   def orderbook(feedName: FeedName.OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
 
-    val subscribeRequest = circe
-      .Encoder.apply[SubscribeRequest].apply(
-        SubscribeRequest(
+    val subscribeRequests =
+      SubscribeRequest
+        .relevantAndHeartbeats(
           feedName = feedName
-        )
-      ).toString
+        ).map(circe.Encoder.apply[SubscribeRequest].apply)
 
     wsClient
-      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint.renderString, subscriptionMessage = Some(subscribeRequest))
+      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint.renderString, subscriptionMessages = subscribeRequests)
       .collect { case m: Relevant => m }
       .map(_.events)
       .flatMap(Stream.emits)
@@ -80,17 +79,15 @@ class Client[F[_]] private (
   }
 
   def candlesticks(feedName: FeedName.Candlesticks): Stream[F, marketData.domain.Candlestick] = {
-    val subscribeRequest = circe
-      .Encoder.apply[SubscribeRequest].apply(
-        SubscribeRequest(
-          feedName = feedName
-        )
-      ).toString
+    val subscribeRequests = SubscribeRequest
+      .relevantAndHeartbeats(
+        feedName = feedName
+      ).map(circe.Encoder.apply[SubscribeRequest].apply)
 
     wsClient
       .wsConnect[dto.CandlesMessage](
         uri = constants.advancedTradeWebSocketEndpoint.renderString,
-        subscriptionMessage = Some(subscribeRequest)
+        subscriptionMessages = subscribeRequests
       ).collect { case relevant: dto.CandlesMessage.Relevant => relevant }
       .map(_.events.lastOption) // if more than one, consider all but last one out of date
       .flattenOption

@@ -10,11 +10,12 @@ import _root_.io.scalaland.chimney
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Candlestick
+import scala.util.Try
 
 sealed trait CandlesMessage
 
 object CandlesMessage {
-  case class Ignore(channel: "subscriptions") extends CandlesMessage derives circe.Decoder
+  case class Ignore(channel: ChannelToIgnore) extends CandlesMessage derives circe.Decoder
 
   case class Relevant(
       events: List[Relevant.Event]

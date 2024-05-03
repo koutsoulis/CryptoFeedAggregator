@@ -19,7 +19,7 @@ sealed trait Level2Message
 
 object Level2Message {
 
-  case class Ignore(channel: "subscriptions") extends Level2Message derives circe.Decoder
+  case class Ignore(channel: ChannelToIgnore) extends Level2Message derives circe.Decoder
 
   given circe.Decoder[Level2Message] =
     circe

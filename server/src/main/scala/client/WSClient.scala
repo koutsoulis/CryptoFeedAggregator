@@ -14,9 +14,10 @@ import org.http4s.implicits.*
 import org.http4s.Uri
 import fs2.Stream
 import org.typelevel.log4cats.Logger
+import _root_.io.circe.Json
 
 trait WSClient[F[_]: Async] {
-  def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessage: Option[String] = None): Stream[F, Out]
+  def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessages: Seq[Json] = Seq.empty): Stream[F, Out]
 }
 
 object WSClient {
@@ -38,7 +39,7 @@ object WSClient {
      * @param uri
      * @return
      */
-    override def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessage: Option[String]): Stream[F, Out] = {
+    override def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessages: Seq[Json]): Stream[F, Out] = {
       val establishWSConnection = F.bracketFull { poll =>
         Logger[F].debug(s"ws connect attempt to: $uri") *>
           F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
@@ -55,8 +56,8 @@ object WSClient {
           Resource.applyFull[F, websocket.WSConnectionHighLevel[F]] { poll => poll(establishWSConnection) }
         ).flatMap { conn =>
           Stream.exec(
-            subscriptionMessage.traverse_ { message =>
-              conn.sendText(message) <* Logger[F].debug(s"subscriptionMessage: ${message.toString}")
+            subscriptionMessages.traverse_ { message =>
+              conn.sendText(message.toString) <* Logger[F].debug(s"subscriptionMessage: ${message.toString}")
             }
           ) ++ conn.receiveStream
         }
