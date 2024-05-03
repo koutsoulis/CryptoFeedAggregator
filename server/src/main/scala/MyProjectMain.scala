@@ -12,13 +12,14 @@ import myMetrics.MyMetrics
 import names.ExchangeName
 import org.http4s.client.middleware.Logger
 import _root_.server.Server
-import marketData.exchange.ExchangeSpecific
+import marketData.exchange.Exchange
 import marketData.MarketDataService
+import fs2.io.net.Network
 
 object MyProjectMain extends IOApp.Simple {
   override def run: IO[Unit] = {
     implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]
-    val serverResource: Resource[IO, Server[IO]] = for {
+    val serverResource: Resource[IO, Server] = for {
       logger <- loggerFactory.create.toResource
       httpClient <- EmberClientBuilder.default[IO].build.map(Logger.apply[IO](false, false))
       wsClient <- JdkWSClient.simple[IO].toResource
@@ -32,7 +33,10 @@ object MyProjectMain extends IOApp.Simple {
               .MarketDataService.apply[IO](exchange, incomingConcurrentStreamsGauge).map(exchange.name -> _)
           }.toResource.map(_.toMap)
 
-      server <- Server[IO](marketDataServiceByExchange, metricsExporter, outgoingConcurrentStreamsGauge)
+      server <- Server[IO](marketDataServiceByExchange, metricsExporter, outgoingConcurrentStreamsGauge)(
+        using Async[IO],
+        Network[IO],
+        logger)
     } yield server
 
     serverResource.useForever.as(())

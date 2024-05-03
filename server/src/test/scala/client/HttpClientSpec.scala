@@ -17,7 +17,7 @@ import client.rateLimits.RLSemaphoreAndReleaseTime
 import org.http4s.MalformedMessageBodyFailure
 import cats.effect.testkit.TestControl
 import client.testUtils.*
-import client.HttpClient.HttpClientLive
+import client.RateLimitedHttpClient.RateLimitedHttpClientLive
 
 object HttpClientSpec extends SimpleIOSuite {
 
@@ -38,16 +38,16 @@ object HttpClientSpec extends SimpleIOSuite {
 
   def clientUnderTestAndRequestEmissionTimes(
       rateLimitPermits: Int,
-      rateLimitPeriod: FiniteDuration): IO[(HttpClientLive[IO], Ref[IO, Vector[FiniteDuration]])] =
+      rateLimitPeriod: FiniteDuration): IO[(RateLimitedHttpClientLive[IO], Ref[IO, Vector[FiniteDuration]])] =
     (stubBackingClientAndRequestEmissionTimes, Semaphore(rateLimitPermits))
       .mapN { case ((backingClient, ref), sem) =>
-        HttpClient.HttpClientLive(httpClient = backingClient, RLSemaphoreAndReleaseTime(sem, rateLimitPeriod)) -> ref
+        RateLimitedHttpClient.RateLimitedHttpClientLive(httpClient = backingClient, RLSemaphoreAndReleaseTime(sem, rateLimitPeriod)) -> ref
       }
 
   /**
    * We build scenarios we want to test in terms of this. Stubs out anything not relevant to the behaviour we're testing.
    */
-  def wrappedGet(client: HttpClient[IO], permitCostPerRequest: Int): IO[Unit] = client
+  def wrappedGet(client: RateLimitedHttpClient[IO], permitCostPerRequest: Int): IO[Unit] = client
     .get[Unit]("foo://example.com", permitCostPerRequest)
     .recover { case _: MalformedMessageBodyFailure =>
       ()
@@ -110,7 +110,8 @@ object HttpClientSpec extends SimpleIOSuite {
      */
     val scenario = (stubBackingClientAndRequestEmissionTimes, Semaphore(rateLimitPermits))
       .flatMapN { case ((backingClient, ref), sem) =>
-        val clientUnderTest = HttpClient.HttpClientLive(httpClient = backingClient, RLSemaphoreAndReleaseTime(sem, rateLimitPeriod))
+        val clientUnderTest =
+          RateLimitedHttpClient.RateLimitedHttpClientLive(httpClient = backingClient, RLSemaphoreAndReleaseTime(sem, rateLimitPeriod))
         val sendRequest = wrappedGet(clientUnderTest, permitCostPerRequest)
 
         for {

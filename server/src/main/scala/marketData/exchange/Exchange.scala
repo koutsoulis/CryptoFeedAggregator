@@ -14,7 +14,7 @@ import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName.Candlesticks
 import names.ExchangeName
 
-trait ExchangeSpecific[F[_]: Async] {
+trait Exchange[F[_]: Async] {
   def allCurrencyPairs: List[TradePair]
 
   def activeCurrencyPairs: F[List[TradePair]]
@@ -31,7 +31,7 @@ trait ExchangeSpecific[F[_]: Async] {
   def name: ExchangeName
 }
 
-object ExchangeSpecific {
+object Exchange {
   // class Stub[F[_]: Async](
   //   allCurrencyPairs: List[(Currency, Currency)] = ???,
   //   activeCurrencyPairs: F[List[TradePair]] = ???,

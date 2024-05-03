@@ -7,7 +7,7 @@ import cats.data.*
 import cats.syntax.all.*
 import fs2.Stream
 import marketData.names.FeedName.OrderbookFeed
-import marketData.exchange.ExchangeSpecific
+import marketData.exchange.Exchange
 import marketData.names.TradePair
 import marketData.names.Currency
 import names.FeedName
@@ -20,7 +20,7 @@ import myMetrics.MyMetrics
 
 object MarketDataServiceSpec extends SimpleIOSuite {
   val backingStreamsAndCallCount = Ref.of[IO, Int](0).map { ref =>
-    val backingStreams: ExchangeSpecific[IO] = new ExchangeSpecific[IO] {
+    val backingStreams: Exchange[IO] = new Exchange[IO] {
 
       override def name: ExchangeName = ExchangeName.Binance
 
@@ -69,7 +69,7 @@ object MarketDataServiceSpec extends SimpleIOSuite {
     MyMetrics.stub[IO].use { case (_, _, incomingConcurrentStreamsGauge) =>
       MarketDataService
         .apply(
-          exchangeSpecific = new ExchangeSpecific {
+          exchangeSpecific = new Exchange {
 
             override def name: ExchangeName = ExchangeName.Binance
 

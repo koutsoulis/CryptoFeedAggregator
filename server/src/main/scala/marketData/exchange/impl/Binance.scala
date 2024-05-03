@@ -1,6 +1,6 @@
 package marketData.exchange.impl
 
-import marketData.exchange.ExchangeSpecific
+import marketData.exchange.Exchange
 import marketData.names.FeedName
 import marketData.names.Currency
 import org.http4s.client.websocket.WSRequest
@@ -39,7 +39,7 @@ trait Binance[F[_]] private (
     client2: binance.Client[F]
 )(
     implicit F: Async[F]
-) extends ExchangeSpecific[F] {
+) extends Exchange[F] {
 
   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
     case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
@@ -97,7 +97,7 @@ object Binance {
       httpRateLimitSem <- Semaphore(requestWeight.permitsAvailable - exchangeInfoRequestWeight)
       wsConnectionRateLimitSem <- Semaphore(wsConnectionPermits)
       binanceHttpClient = client
-        .HttpClient.HttpClientLive(
+        .RateLimitedHttpClient.RateLimitedHttpClientLive(
           httpClient = http4sHttpClient,
           rateLimitsData = client
             .rateLimits.RLSemaphoreAndReleaseTime(
@@ -106,7 +106,7 @@ object Binance {
             )
         )
       binanceWSClient = client
-        .WSClient.WSCLientLive(
+        .RateLimitedWSClient.RateLimitedWSCLientLive(
           wsClient = wsClient,
           wsEstablishConnectionRL = client
             .rateLimits.RLSemaphoreAndReleaseTime(

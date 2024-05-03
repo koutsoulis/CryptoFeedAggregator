@@ -1,6 +1,6 @@
 package marketData.exchange.impl
 
-import marketData.exchange.ExchangeSpecific
+import marketData.exchange.Exchange
 import cats.effect.*
 import marketData.names.FeedName
 import marketData.names.TradePair
@@ -19,7 +19,7 @@ import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import marketData.exchange.impl.coinbase.dto.ListProducts
 
-trait Coinbase[F[_]: Async] extends ExchangeSpecific[F]
+trait Coinbase[F[_]: Async] extends Exchange[F]
 
 object Coinbase {
   class CoinbaseLive[F[_]: Async] private[Coinbase] (

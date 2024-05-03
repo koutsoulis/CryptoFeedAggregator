@@ -12,7 +12,7 @@ import cats.effect.std.MapRef
 import cats.effect.std.Mutex
 import cats.effect.std.AtomicCell
 
-import marketData.exchange.ExchangeSpecific
+import marketData.exchange.Exchange
 import fs2.concurrent.Signal
 import fs2.concurrent.SignallingRef
 import marketData.names.FeedName.OrderbookFeed
@@ -41,7 +41,7 @@ object MarketDataService {
    * @return
    */
   def apply[F[_]](
-      exchangeSpecific: ExchangeSpecific[F],
+      exchangeSpecific: Exchange[F],
       incomingConcurrentStreamsGauge: IncomingConcurrentStreamsGauge[F]
   )(using F: Async[F]): F[MarketDataService[F]] = {
 

@@ -16,17 +16,17 @@ import fs2.Stream
 import org.typelevel.log4cats.Logger
 import _root_.io.circe.Json
 
-trait WSClient[F[_]: Async] {
+trait RateLimitedWSClient[F[_]: Async] {
   def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessages: Seq[Json] = Seq.empty): Stream[F, Out]
 }
 
-object WSClient {
-  class WSCLientLive[F[_]: Logger](
+object RateLimitedWSClient {
+  class RateLimitedWSCLientLive[F[_]: Logger](
       wsClient: websocket.WSClientHighLevel[F],
       wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
   )(
       using F: Async[F]
-  ) extends WSClient {
+  ) extends RateLimitedWSClient {
 
     /**
      * Assumption: ws market stream messages are guaranteed to arrive in order
@@ -74,5 +74,5 @@ object WSClient {
   def apply[F[_]: Async: Logger](
       wsClient: websocket.WSClientHighLevel[F],
       wsEstablishConnectionRL: RLSemaphoreAndReleaseTime[F]
-  ): WSClient[F] = WSCLientLive(wsClient, wsEstablishConnectionRL)
+  ): RateLimitedWSClient[F] = RateLimitedWSCLientLive(wsClient, wsEstablishConnectionRL)
 }

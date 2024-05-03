@@ -32,17 +32,18 @@ import org.http4s.Response
 import org.http4s.blazecore.util.EntityBodyWriter
 import org.http4s.server.middleware.CORS
 import marketData.names.TradePair
+import org.typelevel.log4cats.Logger
 
-trait Server[F[_]: Async]
+trait Server
 
 object Server {
-  class ServerLive[F[_]](implicit F: Async[F]) extends Server[F] {}
+  class ServerLive extends Server
 
-  def apply[F[_]: Async: Network](
+  def apply[F[_]: Async: Network: Logger](
       marketDataServiceByExchange: ExchangeName => MarketDataService[F],
       metricsExporter: MyMetrics.Exporter[F],
       metricsRegister: MyMetrics.OutgoingConcurrentStreamsGauge[F]
-  ): Resource[F, Server[F]] = {
+  ): Resource[F, Server] = {
     http4s
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
@@ -54,7 +55,7 @@ object Server {
                 .map(Cbor.encode(_)(using feedName.borerEncoderForMessage).to[scodec.bits.ByteVector].result)
                 .map(WebSocketFrame.Binary.apply(_))
 
-              Stream.eval(Async[F].delay(println(s"STREAM REQUEST RECEIVED -------------------------${feedName.toString()}"))) >>
+              Stream.eval(Logger[F].debug(s"STREAM REQUEST RECEIVED ${feedName.toString()}")) >>
                 Stream.bracket(metricsRegister.value.inc(1, exchange -> feedName)) { _ =>
                   metricsRegister.value.dec(1, exchange -> feedName)
                 } >>
@@ -75,6 +76,6 @@ object Server {
             .orNotFound.run
         }
       }.build
-      .as(new ServerLive[F])
+      .as(new ServerLive)
   }
 }

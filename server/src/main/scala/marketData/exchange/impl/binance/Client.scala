@@ -24,15 +24,15 @@ import org.http4s.client.websocket.WSRequest
 import fs2.Stream
 import org.http4s.client.websocket.WSFrame.Text
 import org.http4s.client.websocket.WSFrame.Binary
-import client.HttpClient
-import client.WSClient
+import client.RateLimitedHttpClient
+import client.RateLimitedWSClient
 import marketData.names.TradePair
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 
 class Client[F[_]](
-    httpClient: HttpClient[F],
-    wsClient: WSClient[F]
+    httpClient: RateLimitedHttpClient[F],
+    wsClient: RateLimitedWSClient[F]
 )(using F: Async[F]) {
   def orderbookSnapshot(tradePair: TradePair): F[Orderbook] =
     httpClient

@@ -88,7 +88,7 @@ object WSClientSpec extends SimpleIOSuite {
       stubBackingClient(),
       Semaphore[IO](rateLimitPermits).map { sem => RLSemaphoreAndReleaseTime(sem, rateLimitPeriod) }
     ).mapN { case ((backingCLient, receptionTimes), rateLimits) =>
-      WSClient(backingCLient, rateLimits) -> receptionTimes
+      RateLimitedWSClient(backingCLient, rateLimits) -> receptionTimes
     }
 
     val scenario = for {
@@ -141,7 +141,7 @@ object WSClientSpec extends SimpleIOSuite {
       stubBackingClient(delayBetweenElementsInTheStream),
       Semaphore[IO](rateLimitPermits).map { sem => RLSemaphoreAndReleaseTime(sem, rateLimitPeriod) -> sem }
     ).mapN { case ((backingCLient, _), (rateLimits, sem)) =>
-      WSClient(backingCLient, rateLimits) -> sem
+      RateLimitedWSClient(backingCLient, rateLimits) -> sem
     }
 
     test("cancels while blocked on permit acquisition") {
@@ -214,7 +214,7 @@ object WSClientSpec extends SimpleIOSuite {
       stubBackingClient(delayBetweenElementsInTheStream),
       Semaphore[IO](rateLimitPermits).map { sem => RLSemaphoreAndReleaseTime(sem, rateLimitPeriod) -> sem }
     ).mapN { case ((backingCLient, _), (rateLimits, sem)) =>
-      WSClient(backingCLient, rateLimits) -> sem
+      RateLimitedWSClient(backingCLient, rateLimits) -> sem
     }
 
     val scenario = for {
@@ -252,7 +252,7 @@ object WSClientSpec extends SimpleIOSuite {
       stubBackingClient(frameLoad = Some(frameLoadWithNewIncompatibleStructure)),
       Semaphore[IO](rateLimitPermits).map { sem => RLSemaphoreAndReleaseTime(sem, rateLimitPeriod) -> sem }
     ).mapN { case ((backingCLient, _), (rateLimits, sem)) =>
-      WSClient(backingCLient, rateLimits) -> sem
+      RateLimitedWSClient(backingCLient, rateLimits) -> sem
     }
 
     val scenario = for {

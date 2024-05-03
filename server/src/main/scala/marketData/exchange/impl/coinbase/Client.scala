@@ -6,8 +6,8 @@ import cats.data.*
 import cats.syntax.all.*
 import mouse.all.*
 import fs2.{Stream, Pull}
-import client.WSClient
-import client.HttpClient
+import client.RateLimitedWSClient
+import client.RateLimitedHttpClient
 import marketData.names.TradePair
 import org.http4s.implicits.uri
 import org.http4s
@@ -24,13 +24,13 @@ import marketData.names.FeedName
 import _root_.io.circe
 import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
 import monocle.syntax.all.*
-import client.HttpClient.HttpClientLive
+import client.RateLimitedHttpClient.RateLimitedHttpClientLive
 import marketData.exchange.impl.coinbase.dto.ListProducts
 import marketData.names.Currency
 
 class Client[F[_]] private (
-    wsClient: WSClient[F],
-    httpClient: HttpClient[F]
+    wsClient: RateLimitedWSClient[F],
+    httpClient: RateLimitedHttpClient[F]
 )(using F: Async[F]) {
   def orderbook(feedName: FeedName.OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
 
@@ -113,22 +113,22 @@ object Client {
       wsClient: http4s.client.websocket.WSClientHighLevel[F],
       http4sHttpClient: http4s.client.Client[F]
   ): F[Client[F]] = {
-    val wsClientWrapped: F[WSClient[F]] = Semaphore(constants.websocketRequestsPerSecondPerIP)
+    val wsClientWrapped: F[RateLimitedWSClient[F]] = Semaphore(constants.websocketRequestsPerSecondPerIP)
       .map { sem =>
         RLSemaphoreAndReleaseTime(semaphore = sem, releaseTime = constants.websocketRateLimitRefreshPeriod)
       }.map { wsEstablishConnectionRL =>
-        WSClient
+        RateLimitedWSClient
           .apply(
             wsClient = wsClient,
             wsEstablishConnectionRL = wsEstablishConnectionRL
           )
       }
 
-    val httpClientWrapped: F[HttpClient[F]] = Semaphore(constants.httpRequestsPerSecondPerIP)
+    val httpClientWrapped: F[RateLimitedHttpClient[F]] = Semaphore(constants.httpRequestsPerSecondPerIP)
       .map { sem =>
         RLSemaphoreAndReleaseTime(semaphore = sem, releaseTime = constants.httpRateLimitRefreshPeriod)
       }.map { rateLimitsData =>
-        HttpClientLive(
+        RateLimitedHttpClientLive(
           httpClient = http4sHttpClient,
           rateLimitsData = rateLimitsData
         )
