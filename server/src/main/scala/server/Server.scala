@@ -33,6 +33,7 @@ import org.http4s.blazecore.util.EntityBodyWriter
 import org.http4s.server.middleware.CORS
 import marketData.names.TradePair
 import org.typelevel.log4cats.Logger
+import servingRoutes.ServingRoutes
 
 trait Server
 
@@ -40,39 +41,17 @@ object Server {
   class ServerLive extends Server
 
   def apply[F[_]: Async: Network: Logger](
-      marketDataServiceByExchange: ExchangeName => MarketDataService[F],
-      metricsExporter: MyMetrics.Exporter[F],
-      metricsRegister: MyMetrics.OutgoingConcurrentStreamsGauge[F]
+      servingRoutes: ServingRoutes[F],
+      metricsExporter: MyMetrics.Exporter[F]
   ): Resource[F, Server] = {
     http4s
       .ember.server.EmberServerBuilder.default
       .withHttpWebSocketApp { wsBuilder =>
-        val wsRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) :? FeedName.Matcher(feedName) =>
-          wsBuilder.build(
-            sendReceive = { messagesFromClient =>
-              val messagesToClient = marketDataServiceByExchange(exchange)
-                .stream(feedName)
-                .map(Cbor.encode(_)(using feedName.borerEncoderForMessage).to[scodec.bits.ByteVector].result)
-                .map(WebSocketFrame.Binary.apply(_))
-
-              Stream.eval(Logger[F].debug(s"STREAM REQUEST RECEIVED ${feedName.toString()}")) >>
-                Stream.bracket(metricsRegister.value.inc(1, exchange -> feedName)) { _ =>
-                  metricsRegister.value.dec(1, exchange -> feedName)
-                } >>
-                messagesFromClient
-                  .zipRight(messagesToClient) // the client dictates via messagesFromClient the rate at which messages are sent to them
-            }
-          )
-        }
-
-        val httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) / "activeCurrencyPairs" =>
-          marketDataServiceByExchange(exchange).activeCurrencyPairs.map(Response[F]().withEntity[List[TradePair]])
-        }
-
         HttpApp {
-          wsRoutes
+          servingRoutes
+            .wsRoutes(wsBuilder)
             .combineK(metricsExporter.metricsRoute)
-            .combineK(CORS.policy.withAllowOriginAll.httpRoutes(httpRoutes))
+            .combineK(CORS.policy.withAllowOriginAll.httpRoutes(servingRoutes.httpRoutes))
             .orNotFound.run
         }
       }.build
