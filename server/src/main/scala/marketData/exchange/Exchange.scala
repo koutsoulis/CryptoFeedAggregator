@@ -32,37 +32,20 @@ trait Exchange[F[_]: Async] {
 }
 
 object Exchange {
-  // class Stub[F[_]: Async](
-  //   allCurrencyPairs: List[(Currency, Currency)] = ???,
-  //   activeCurrencyPairs: F[List[TradePair]] = ???,
-  //   allFeedNames: List[FeedName[?]] = ???,
-  //   stream[M](feedDef: FeedName[M]): Stream[F, M] = ???
-  // ) extends ExchangeSpecific[F] {
-  //   override
-  // }
+  def stub[F[_], M](using F: Async[F])(
+      allCurrencyPairsStub: List[TradePair] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))),
+      activeCurrencyPairsStub: F[List[TradePair]] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))).pure[F],
+      streamStub: (feedName: FeedName[?]) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
+      nameStub: ExchangeName = ExchangeName.Binance
+  ): Exchange[F] = new Exchange {
 
-  //   override def allCurrencyPairs: List[(Currency, Currency)] = List(
-  //     Currency("BTC") -> Currency("ETH"),
-  //     Currency("BTC") -> Currency("USD")
-  //   )
+    override def allCurrencyPairs: List[TradePair] = allCurrencyPairsStub
 
-  //   override def activeCurrencyPairs: F[List[TradePair]] = allCurrencyPairs.tail.map(TradePair.apply).pure
+    override def activeCurrencyPairs: F[List[TradePair]] = activeCurrencyPairsStub
 
-  //   override def allFeedNames: List[FeedName[?]] = List(
-  //     new FeedName.Stub,
-  //     FeedName.Candlesticks(TradePair(Currency("BTC"), Currency("USD")))
-  //   )
+    override def stream[M](feedDef: FeedName[M]): Stream[F, M] = streamStub(feedDef)
 
-  //   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
-  //     case OrderbookFeed(currency1, currency2) => ???
-  //     case Candlesticks(_) =>
-  //       Stream.fromIterator(
-  //         iterator = Iterator.continually(
-  //           Candlestick(1, 1, 1, 1)
-  //         ),
-  //         chunkSize = 1
-  //       )
-  //     case Stub(_value) => ???
-  //   }
-  // }
+    override def name: ExchangeName = nameStub
+
+  }
 }

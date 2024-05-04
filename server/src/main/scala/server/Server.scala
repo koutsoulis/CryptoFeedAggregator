@@ -60,7 +60,7 @@ object Server {
                   metricsRegister.value.dec(1, exchange -> feedName)
                 } >>
                 messagesFromClient
-                  .zipRight(messagesToClient)
+                  .zipRight(messagesToClient) // the client dictates via messagesFromClient the rate at which messages are sent to them
             }
           )
         }

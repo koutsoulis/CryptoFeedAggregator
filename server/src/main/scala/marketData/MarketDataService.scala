@@ -41,7 +41,7 @@ object MarketDataService {
    * @return
    */
   def apply[F[_]](
-      exchangeSpecific: Exchange[F],
+      exchange: Exchange[F],
       incomingConcurrentStreamsGauge: IncomingConcurrentStreamsGauge[F]
   )(using F: Async[F]): F[MarketDataService[F]] = {
 
@@ -61,12 +61,12 @@ object MarketDataService {
         subscribersCount: Int
     )
 
-    val locks: F[Map[FeedName[?], Mutex[F]]] = exchangeSpecific
+    val locks: F[Map[FeedName[?], Mutex[F]]] = exchange
       .allFeedNames.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
-    val initSFCs: F[Map[FeedName[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchangeSpecific
+    val initSFCs: F[Map[FeedName[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchange
       .allFeedNames.traverse { feedDef =>
         Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
       }.map(_.toMap)
@@ -75,7 +75,7 @@ object MarketDataService {
       F.delay {
         TrieMap
           .from[FeedName[?], Int](
-            exchangeSpecific.allFeedNames.map { _ -> 0 }
+            exchange.allFeedNames.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
 
@@ -137,11 +137,11 @@ object MarketDataService {
                 ).flatten
           }
 
-          override def activeCurrencyPairs: F[List[TradePair]] = exchangeSpecific.activeCurrencyPairs
+          override def activeCurrencyPairs: F[List[TradePair]] = exchange.activeCurrencyPairs
 
           private def backingStreamWrappedInPrometheusMetric(feed: FeedName[?]): Stream[F, feed.Message] = Stream.bracket(
-            incomingConcurrentStreamsGauge.value.inc(exchangeSpecific.name -> feed)
-          )(_ => incomingConcurrentStreamsGauge.value.dec(exchangeSpecific.name -> feed)) >> exchangeSpecific.stream(feed)
+            incomingConcurrentStreamsGauge.value.inc(exchange.name -> feed)
+          )(_ => incomingConcurrentStreamsGauge.value.dec(exchange.name -> feed)) >> exchange.stream(feed)
         }
     }
 
