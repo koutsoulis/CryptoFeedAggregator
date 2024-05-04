@@ -16,7 +16,6 @@ object testUtils {
         timesInNextPeriod -> acc.appended(timesInNextPeriod.size)
       }._2
 
-    // println(numberOfRequestsPerPeriod)
     numberOfRequestsPerPeriod.forall(_ <= maxRequestsPerPeriodExpected)
   }
 }

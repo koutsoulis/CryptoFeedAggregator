@@ -7,6 +7,7 @@ import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import marketData.names.Currency
 import marketData.names.TradePair
+import scala.util.Try
 
 final case class ExchangeInfo(
     rateLimits: List[ExchangeInfo.RateLimit],
@@ -22,34 +23,21 @@ object ExchangeInfo {
   ) derives circe.Decoder
 
   object RateLimit {
-    sealed trait RLType
+    enum RLType {
+      case REQUEST_WEIGHT, RAW_REQUESTS, Ignore
+    }
+
     object RLType {
-      object REQUEST_WEIGHT extends RLType
-      object RAW_REQUESTS extends RLType
-      object Ignore extends RLType
-
-      implicit val rlTypeDecoder: circe.Decoder[RLType] = circe.Decoder[String].map {
-        case "REQUEST_WEIGHT" => REQUEST_WEIGHT
-        case "RAW_REQUESTS" => RAW_REQUESTS
-        case _ => Ignore
-      }
+      given circe.Decoder[RLType] = circe.Decoder[String].emapTry { s => Try(RLType.valueOf(s)) }.or(circe.Decoder.const(Ignore))
     }
 
-    sealed trait Interval
+    enum Interval {
+      case SECOND, MINUTE, HOUR, DAY
+    }
     object Interval {
-      object SECOND extends Interval
-      object MINUTE extends Interval
-      object HOUR extends Interval
-      object DAY extends Interval
-
-      implicit val intervalDecoder: circe.Decoder[Interval] = circe.Decoder[String].emap {
-        case "SECOND" => Right(SECOND)
-        case "MINUTE" => Right(MINUTE)
-        case "HOUR" => Right(HOUR)
-        case "DAY" => Right(DAY)
-        case string => Left(s"unknown binance ratelimit interval type: $string")
-      }
+      given circe.Decoder[Interval] = circe.Decoder[String].emapTry { s => Try(Interval.valueOf(s)) }
     }
+
   }
 
   final case class SymbolPair(
@@ -59,14 +47,6 @@ object ExchangeInfo {
   ) derives circe.Decoder {
     def baseAssetCurrency: Currency = Currency(baseAsset)
     def quoteAssetCurrency: Currency = Currency(quoteAsset)
-
-    // def toTradePair: TradePair = chimney
-    //   .Transformer.define[SymbolPair, TradePair]
-    //   .withFieldRenamed(_.baseAsset, _.base)
-    //   .withFieldRenamed(_.quoteAsset, _.quote)
-    //   .buildTransformer
-    //   .transform(this)
-
   }
 
   object SymbolPair {

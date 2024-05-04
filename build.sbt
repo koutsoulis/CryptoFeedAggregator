@@ -171,7 +171,8 @@ lazy val server = (project in file("server"))
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
       "is.cir" %% "ciris" % "3.5.0",
       "io.github.keirlawson" %% "ciris-aws-secretsmanager" % "7.0.0",
-      "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
+      "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test,
+      "com.lihaoyi" %% "os-lib" % "0.10.0"
     ),
     semanticdbEnabled := true,
     autoAPIMappings := true,
