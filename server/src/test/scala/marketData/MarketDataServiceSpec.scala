@@ -51,7 +51,19 @@ object MarketDataServiceSpec extends IOSuite {
     } yield expect(callCountV == 1)
   }
 
-  test("preserves error thrown by Exchange service") { incomingConcurrentStreamsGauge =>
+  test("concludes streaming of a FeedName and reliably streams anew") { incomingConcurrentStreamsGauge =>
+    for {
+      (exchange, callCount) <- exchangeAndCallCount
+      marketDataService <- MarketDataService.apply(exchange, incomingConcurrentStreamsGauge)
+      arbitraryPair <- exchange.activeCurrencyPairs.map(_.head)
+      requestStubDatafeed = marketDataService.stream(Candlesticks(arbitraryPair))
+      _ <- requestStubDatafeed.take(10).compile.drain
+      outputSecondTime <- requestStubDatafeed.take(10).compile.toList
+      callCountV <- callCount.get
+    } yield expect(callCountV == 2) && expect(outputSecondTime.size == 10)
+  }
+
+  test("preserves error thrown by the Exchange service") { incomingConcurrentStreamsGauge =>
     val errorFromExchangeService = new Exception("error from Exchange service")
 
     MarketDataService
