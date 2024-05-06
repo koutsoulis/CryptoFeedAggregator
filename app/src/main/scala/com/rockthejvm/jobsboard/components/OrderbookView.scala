@@ -18,7 +18,7 @@ object OrderbookView {
       val asks =
         scanAccumulateQuantityAlongLevels(ob.askLevelToQuantity.toList.take(100))
       val bids =
-        scanAccumulateQuantityAlongLevels(ob.bidLevelToQuantity.toList.take(100).reverse)
+        scanAccumulateQuantityAlongLevels(ob.bidLevelToQuantity.toList.reverse.take(100))
       val maxAsksVolume = asks.map(_._2).max
       val maxBidsVolume = bids.map(_._2).max
 
