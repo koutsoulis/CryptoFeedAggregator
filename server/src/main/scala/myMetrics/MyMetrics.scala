@@ -40,8 +40,16 @@ object MyMetrics {
       : Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] = {
     for {
       registry <- Prometheus.collectorRegistry
-      p4catsJavaMetricRegistry <- JavaMetricRegistry.Builder().withRegistry(registry).build
-      metricsFactory = stubMetricFactory.getOrElse(MetricFactory.builder.build(p4catsJavaMetricRegistry))
+      // p4catsJavaMetricRegistry <- JavaMetricRegistry.Builder().withRegistry(registry).build
+      // metricsFactory = stubMetricFactory.getOrElse(MetricFactory.builder.build(p4catsJavaMetricRegistry))
+      metricsFactory <- stubMetricFactory
+        .map(Resource.pure)
+        .getOrElse(
+          JavaMetricRegistry
+            .Builder().withRegistry(registry).build
+            .map(MetricFactory.builder.build)
+        )
+
       concurrentStreamsGaugeDefinition = new ConcurrentStreamsGaugeFactory[F]
       outgoingConcurrentStreamsGaugeImpl <-
         concurrentStreamsGaugeDefinition.make(
@@ -80,6 +88,7 @@ object MyMetrics {
   def apply[F[_]: Async: Logger]: Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] =
     applyImpl()
 
-  def stub[F[_]: Async]: Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] =
+  def stub[F[_]: Async]: F[(Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] =
     applyImpl(stubMetricFactory = Some(MetricFactory.noop[F]))(using Async[F], NoOpLogger.apply)
+      .allocated.map(_._1) // no real need for finalizers e.g. Prometheus.collectorRegistry deregisters collectors, but we dont register any
 }

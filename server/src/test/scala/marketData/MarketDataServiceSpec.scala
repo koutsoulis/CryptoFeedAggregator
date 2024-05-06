@@ -23,7 +23,7 @@ object MarketDataServiceSpec extends IOSuite {
 
   override type Res = IncomingConcurrentStreamsGauge[IO]
   override def sharedResource: Resource[IO, IncomingConcurrentStreamsGauge[IO]] =
-    MyMetrics.stub[IO].map(_._3)
+    MyMetrics.stub[IO].map(_._3).toResource
 
   val exchangeAndCallCount = Ref.of[IO, Int](0).map { ref =>
     val exchange: Exchange[IO] =

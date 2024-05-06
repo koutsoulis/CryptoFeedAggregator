@@ -9,7 +9,7 @@ lazy val scala3Version = "3.4.0"
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 lazy val catsEffectVersion = "3.5.3"
-lazy val http4sVersion = "0.23.25"
+lazy val http4sVersion = "0.23.27"
 lazy val http4sBlazeVersion = "0.23.16"
 lazy val http4sJDKClientVersion = "0.9.1"
 lazy val circeVersion = "0.14.7"
@@ -140,6 +140,7 @@ lazy val server = (project in file("server"))
       "org.http4s" %% "http4s-blaze-core" % http4sBlazeVersion,
       "org.http4s" %% "http4s-blaze-server" % http4sBlazeVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
+      "org.http4s" %% "http4s-client-testkit" % http4sVersion,
       "org.http4s" %% "http4s-jdk-http-client" % http4sJDKClientVersion,
       "org.http4s" %% "http4s-prometheus-metrics" % "0.24.6",
       "com.permutive" %% "prometheus4cats" % prometheus4catsVersion,

@@ -24,6 +24,8 @@ import cats.effect.std.Queue
 import marketData.names.TradePair
 import names.FeedName
 import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
+import myMetrics.MyMetrics
+import marketData.names.Currency
 
 trait MarketDataService[F[_]] {
   def stream(feed: FeedName[?]): Stream[F, feed.Message]
@@ -144,6 +146,17 @@ object MarketDataService {
           )(_ => incomingConcurrentStreamsGauge.value.dec(exchange.name -> feed)) >> exchange.stream(feed)
         }
     }
+
+  }
+
+  def stub[F[_]](using Async[F])(
+      streamStub: (feedName: FeedName[?]) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
+      activeCurrencyPairsStub: F[List[TradePair]] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))).pure[F]
+  ) = new MarketDataService[F] {
+
+    override def stream(feed: FeedName[?]): Stream[F, feed.Message] = streamStub(feed)
+
+    override def activeCurrencyPairs: F[List[TradePair]] = activeCurrencyPairsStub
 
   }
 }

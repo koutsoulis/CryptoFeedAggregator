@@ -22,10 +22,10 @@ object MarketDataServiceIT extends SimpleIOSuite {
 
   val mdService = for {
     httpClient <- http4s.ember.client.EmberClientBuilder.default.build
-    wsClient <- Resource.eval(http4s.jdkhttpclient.JdkWSClient.simple)
-    (_, _, incomingConcurrentStreamsGauge) <- MyMetrics.stub
+    wsClient <- http4s.jdkhttpclient.JdkWSClient.simple.toResource
+    (_, _, incomingConcurrentStreamsGauge) <- MyMetrics.stub.toResource
     exchange <- Resource.eval(Binance.apply[IO](httpClient, wsClient))
-    mdService <- Resource.eval(MarketDataService.apply(exchange, incomingConcurrentStreamsGauge))
+    mdService <- MarketDataService.apply(exchange, incomingConcurrentStreamsGauge).toResource
   } yield mdService
 
   test("bs test") {
