@@ -9,6 +9,8 @@ import marketData.names.Currency
 import marketData.names.TradePair
 import scala.util.Try
 
+// https://binance-docs.github.io/apidocs/spot/en/#exchange-information
+
 final case class ExchangeInfo(
     rateLimits: List[ExchangeInfo.RateLimit],
     symbols: List[ExchangeInfo.SymbolPair]

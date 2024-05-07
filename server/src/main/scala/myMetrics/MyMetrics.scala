@@ -40,8 +40,6 @@ object MyMetrics {
       : Resource[F, (Exporter[F], OutgoingConcurrentStreamsGauge[F], IncomingConcurrentStreamsGauge[F])] = {
     for {
       registry <- Prometheus.collectorRegistry
-      // p4catsJavaMetricRegistry <- JavaMetricRegistry.Builder().withRegistry(registry).build
-      // metricsFactory = stubMetricFactory.getOrElse(MetricFactory.builder.build(p4catsJavaMetricRegistry))
       metricsFactory <- stubMetricFactory
         .map(Resource.pure)
         .getOrElse(

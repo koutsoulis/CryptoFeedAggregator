@@ -3,6 +3,8 @@ package marketData.exchange.impl.binance.dto
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 
+// https://binance-docs.github.io/apidocs/spot/en/#partial-book-depth-streams
+
 final case class OrderbookUpdate(
     U: Long, // First update ID in event
     u: Long, // Final update ID in event

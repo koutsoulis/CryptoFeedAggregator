@@ -23,4 +23,7 @@ object constants {
   val advancedTradeEndpointURL: Uri = uri"https://api.coinbase.com/api/v3/brokerage"
   val httpRequestsPerSecondPerIP: Int = 9 // minus one to accommodate the setup request sent before permit counting
   val httpRateLimitRefreshPeriod: FiniteDuration = 1.second
+
+  // https://docs.cloud.coinbase.com/advanced-trade/reference/retailbrokerageapi_getpublicproducts
+  val listPublicProductsEndpoint = advancedTradeEndpointURL.addPath("market/products")
 }

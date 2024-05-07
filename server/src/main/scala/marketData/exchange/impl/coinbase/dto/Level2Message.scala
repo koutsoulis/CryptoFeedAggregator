@@ -15,6 +15,8 @@ import scala.util.Try
 import io.scalaland.chimney.partial.Result
 import scala.collection.immutable.TreeMap
 
+// https://docs.cloud.coinbase.com/advanced-trade/docs/ws-channels#level2-channel
+
 sealed trait Level2Message
 
 object Level2Message {

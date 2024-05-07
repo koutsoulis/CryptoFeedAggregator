@@ -9,8 +9,8 @@ import scala.concurrent.duration.FiniteDuration
 import marketData.names.Currency
 import java.util.Locale
 
+// last checked 6 May 2024
 object constants {
-  // 6 May 2024
   // https://binance-docs.github.io/apidocs/spot/en/#general-info
   val baseEndpoint: Uri = uri"https://api.binance.com"
   val exchangeInfoEndpoint = baseEndpoint.addPath("api/v3/exchangeInfo")

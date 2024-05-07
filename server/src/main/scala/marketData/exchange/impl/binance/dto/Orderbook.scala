@@ -10,6 +10,8 @@ import _root_.io.scalaland.chimney
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 
+// https://binance-docs.github.io/apidocs/spot/en/#order-book
+
 final case class Orderbook(
     lastUpdateId: Long,
     bids: List[(BigDecimal, BigDecimal)],

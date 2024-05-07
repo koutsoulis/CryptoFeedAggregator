@@ -98,7 +98,7 @@ class Client[F[_]] private (
 
   def enabledTradePairs: F[List[TradePair]] = httpClient
     .get[ListProducts](
-      uri = constants.advancedTradeEndpointURL.addPath("market/products"),
+      uri = constants.listPublicProductsEndpoint,
       permitsNeeded = 1
     ).map(_.products)
     .map { products =>

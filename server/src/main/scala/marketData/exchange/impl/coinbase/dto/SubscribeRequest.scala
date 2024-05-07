@@ -9,6 +9,8 @@ import marketData.names.FeedName.Candlesticks
 import marketData.exchange.impl.coinbase.constants
 import monocle.syntax.all.*
 
+// https://docs.cloud.coinbase.com/advanced-trade/docs/ws-overview#sending-messages-without-api-keys
+
 case class SubscribeRequest private (
     `type`: String,
     product_ids: List[String],
