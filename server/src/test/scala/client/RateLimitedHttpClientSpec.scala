@@ -48,7 +48,7 @@ object RateLimitedHttpClientSpec extends SimpleIOSuite {
    * We build scenarios we want to test in terms of this. Stubs out anything not relevant to the behaviour we're testing.
    */
   def wrappedGet(client: RateLimitedHttpClient[IO], permitCostPerRequest: Int): IO[Unit] = client
-    .get[Unit]("foo://example.com", permitCostPerRequest)
+    .get[Unit](uri"foo://example.com", permitCostPerRequest)
     .recover { case _: MalformedMessageBodyFailure =>
       ()
     }

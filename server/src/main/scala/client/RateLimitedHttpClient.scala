@@ -14,7 +14,7 @@ import org.http4s.Uri
 
 trait RateLimitedHttpClient[F[_]: Async] {
   def get[Out: circe.Decoder](
-      uri: String,
+      uri: Uri,
       permitsNeeded: Int
   ): F[Out]
 }
@@ -34,15 +34,12 @@ object RateLimitedHttpClient {
      * TODO reattempt & backoff
      */
     override def get[Out: circe.Decoder](
-        uri: String,
+        uri: Uri,
         permitsNeeded: Int
     ): F[Out] =
       F.bracketFull { poll =>
-        F.fromEither(Uri.fromString(uri)) <*
-          poll(rateLimitsData.semaphore.acquireN(permitsNeeded))
-      }(
-        httpClient.expect[Out].apply
-      ) { (_, _) =>
+        poll(rateLimitsData.semaphore.acquireN(permitsNeeded))
+      }(_ => httpClient.expect[Out](uri)) { (_, _) =>
         F.start(F.sleep(rateLimitsData.releaseTime) *> rateLimitsData.semaphore.releaseN(permitsNeeded)).void
       }
   }

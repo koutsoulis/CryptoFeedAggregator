@@ -112,7 +112,7 @@ object Binance {
       override def activeCurrencyPairs: F[List[TradePair]] =
         binanceHttpClient
           .get[ExchangeInfo](
-            uri = constants.exchangeInfoEndpoint.renderString,
+            uri = constants.exchangeInfoEndpoint,
             permitsNeeded = constants.exchangeInfoRequestWeight
           )
           .map(

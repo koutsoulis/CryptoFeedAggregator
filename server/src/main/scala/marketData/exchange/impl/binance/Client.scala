@@ -37,7 +37,7 @@ class Client[F[_]](
   def orderbookSnapshot(tradePair: TradePair): F[Orderbook] =
     httpClient
       .get[dto.Orderbook](
-        constants.orderbookSnapshotEndpoint(tradePair).renderString,
+        constants.orderbookSnapshotEndpoint(tradePair),
         constants.orderbookSnapshotRLPermits
       )
       .map(dto.Orderbook.transformer.transform)
@@ -45,14 +45,14 @@ class Client[F[_]](
   def orderbookUpdates(tradePair: TradePair): Stream[F, domain.OrderbookUpdate] =
     wsClient
       .wsConnect[dto.OrderbookUpdate](
-        constants.diffDepthStreamEndpoint(tradePair).renderString
+        constants.diffDepthStreamEndpoint(tradePair)
       ).map(domain.OrderbookUpdate.transformer.transform)
       .evalTap(out => F.delay(println(out.lastUpdateId)))
 
   def candlesticks(tradePair: TradePair): Stream[F, marketData.domain.Candlestick] =
     wsClient
       .wsConnect[dto.Candlestick](
-        constants.candlestickStreamEndpoint(tradePair).renderString
+        constants.candlestickStreamEndpoint(tradePair)
       ).map(_.transformInto[marketData.domain.Candlestick])
 
 }

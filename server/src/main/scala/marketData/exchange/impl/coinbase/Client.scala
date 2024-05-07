@@ -41,7 +41,7 @@ class Client[F[_]] private (
         ).map(circe.Encoder.apply[SubscribeRequest].apply)
 
     wsClient
-      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint.renderString, subscriptionMessages = subscribeRequests)
+      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint, subscriptionMessages = subscribeRequests)
       .collect { case m: Relevant => m }
       .map(_.events)
       .flatMap(Stream.emits)
@@ -86,7 +86,7 @@ class Client[F[_]] private (
 
     wsClient
       .wsConnect[dto.CandlesMessage](
-        uri = constants.advancedTradeWebSocketEndpoint.renderString,
+        uri = constants.advancedTradeWebSocketEndpoint,
         subscriptionMessages = subscribeRequests
       ).collect { case relevant: dto.CandlesMessage.Relevant => relevant }
       .map(_.events.lastOption) // if more than one, consider all but last one out of date
@@ -98,7 +98,7 @@ class Client[F[_]] private (
 
   def enabledTradePairs: F[List[TradePair]] = httpClient
     .get[ListProducts](
-      uri = constants.advancedTradeEndpointURL.addPath("market/products").toString,
+      uri = constants.advancedTradeEndpointURL.addPath("market/products"),
       permitsNeeded = 1
     ).map(_.products)
     .map { products =>

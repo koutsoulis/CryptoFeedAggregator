@@ -94,7 +94,7 @@ object RateLimitedWSClientSpec extends SimpleIOSuite {
     val scenario = for {
       (clientUnderTest, receptionTimesRef) <- clientUnderTestAndReceptionTimes
       wsConnect = clientUnderTest
-        .wsConnect[Unit]("foo://example.com")
+        .wsConnect[Unit](uri"foo://example.com")
         .recover { case _: circe.DecodingFailure =>
           ()
         }
@@ -148,7 +148,7 @@ object RateLimitedWSClientSpec extends SimpleIOSuite {
       val scenario = for {
         (clientUnderTest, sem) <- clientUnderTestAndRLSemaphore
         wsConnect = clientUnderTest
-          .wsConnect[Int]("foo://example.com")
+          .wsConnect[Int](uri"foo://example.com")
           .take(10)
         _connectionWhichAcquiresSolePermit <- GenSpawn[IO].start(wsConnect.compile.drain)
         _ <- IO.sleep(rateLimitPeriod / 2) // ensures _connectionWhichAcquiresSolePermit acquires permit but has not yet released it
@@ -181,7 +181,7 @@ object RateLimitedWSClientSpec extends SimpleIOSuite {
       val scenario = for {
         (clientUnderTest, sem) <- clientUnderTestAndRLSemaphore
         wsConnect = clientUnderTest
-          .wsConnect[Int]("foo://example.com")
+          .wsConnect[Int](uri"foo://example.com")
           .take(10)
         latestNumberProducedByCanceleeRef <- IO.ref(-1)
         handleToStream <- GenSpawn[IO].start(wsConnect.evalTap(latestNumberProducedByCanceleeRef.set).compile.drain)
@@ -220,7 +220,7 @@ object RateLimitedWSClientSpec extends SimpleIOSuite {
     val scenario = for {
       (clientUnderTest, sem) <- clientUnderTestAndRLSemaphore
       wsConnect = clientUnderTest
-        .wsConnect[Int]("foo://example.com")
+        .wsConnect[Int](uri"foo://example.com")
         .take(10)
       _streamHandle <- GenSpawn[IO].start(wsConnect.take(10).compile.drain)
       permitsAfterConnectAndBeforeRateLimitRefreshWindow <- IO.sleep(rateLimitPeriod / 2) *> sem.available
@@ -258,7 +258,7 @@ object RateLimitedWSClientSpec extends SimpleIOSuite {
     val scenario = for {
       (clientUnderTest, _) <- clientUnderTestAndRLSemaphore
       _ <- clientUnderTest
-        .wsConnect[DTOWhichRegressed]("foo://example.com")
+        .wsConnect[DTOWhichRegressed](uri"foo://example.com")
         .take(1).compile.drain
     } yield ()
 

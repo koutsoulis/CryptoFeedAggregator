@@ -8,6 +8,7 @@ import cats.data.*
 import cats.syntax.all.*
 import org.http4s
 import org.http4s.client.websocket
+import org.http4s.client.websocket.WSRequest
 import org.http4s.circe.CirceEntityCodec.*
 import org.http4s.dsl.*
 import org.http4s.implicits.*
@@ -17,7 +18,7 @@ import org.typelevel.log4cats.Logger
 import _root_.io.circe.Json
 
 trait RateLimitedWSClient[F[_]: Async] {
-  def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessages: Seq[Json] = Seq.empty): Stream[F, Out]
+  def wsConnect[Out: circe.Decoder](uri: Uri, subscriptionMessages: Seq[Json] = Seq.empty): Stream[F, Out]
 }
 
 object RateLimitedWSClient {
@@ -39,13 +40,12 @@ object RateLimitedWSClient {
      * @param uri
      * @return
      */
-    override def wsConnect[Out: circe.Decoder](uri: String, subscriptionMessages: Seq[Json]): Stream[F, Out] = {
+    override def wsConnect[Out: circe.Decoder](uri: Uri, subscriptionMessages: Seq[Json]): Stream[F, Out] = {
       val establishWSConnection = F.bracketFull { poll =>
         Logger[F].debug(s"ws connect attempt to: $uri") *>
-          F.fromEither(Uri.fromString(uri)).map(websocket.WSRequest.apply) <*
           poll(wsEstablishConnectionRL.semaphore.acquire)
       } { wsRequest =>
-        wsClient.connectHighLevel(wsRequest).allocatedCase
+        wsClient.connectHighLevel(WSRequest(uri)).allocatedCase
       } { (_, outcome) =>
         Logger[F].debug(s"ws attempt to: $uri , outcome: $outcome") *>
           F.start(F.sleep(wsEstablishConnectionRL.releaseTime) *> wsEstablishConnectionRL.semaphore.release).void
