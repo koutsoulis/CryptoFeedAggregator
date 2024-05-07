@@ -37,22 +37,22 @@ class Client[F[_]](
   def orderbookSnapshot(tradePair: TradePair): F[Orderbook] =
     httpClient
       .get[dto.Orderbook](
-        s"https://api.binance.com/api/v3/depth?symbol=${Binance.tradePairSymbol(tradePair)}&limit=5000",
-        250
+        constants.orderbookSnapshotEndpoint(tradePair).renderString,
+        constants.orderbookSnapshotRLPermits
       )
       .map(dto.Orderbook.transformer.transform)
 
   def orderbookUpdates(tradePair: TradePair): Stream[F, domain.OrderbookUpdate] =
     wsClient
       .wsConnect[dto.OrderbookUpdate](
-        s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(tradePair)}@depth@100ms"
+        constants.diffDepthStreamEndpoint(tradePair).renderString
       ).map(domain.OrderbookUpdate.transformer.transform)
       .evalTap(out => F.delay(println(out.lastUpdateId)))
 
   def candlesticks(tradePair: TradePair): Stream[F, marketData.domain.Candlestick] =
     wsClient
       .wsConnect[dto.Candlestick](
-        s"wss://stream.binance.com:9443/ws/${Binance.streamTradePairSymbol(tradePair)}@kline_1s"
+        constants.candlestickStreamEndpoint(tradePair).renderString
       ).map(_.transformInto[marketData.domain.Candlestick])
 
 }

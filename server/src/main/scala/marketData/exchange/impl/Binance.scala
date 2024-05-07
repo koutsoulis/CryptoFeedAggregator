@@ -34,6 +34,8 @@ import marketData.names.FeedName.Candlesticks
 import marketData.exchange.impl.binance.dto.Candlestick
 import org.typelevel.log4cats.Logger
 import names.ExchangeName
+import binance.constants
+import java.util.Locale
 
 trait Binance[F[_]] private (
     client2: binance.Client[F]
@@ -56,7 +58,6 @@ trait Binance[F[_]] private (
 
       val orderbookSnapshot: F[Orderbook] = client2.orderbookSnapshot(tradePair)
 
-      // TODO check if expressible using Stream#debounce
       val orderbookSnapshotsAsNestedPull = for {
         firstUpdateMaybe <- orderbookUpdates.pull.uncons1
         (firstUpdate, rest) <- Pull.eval(F.fromOption(firstUpdateMaybe, new Exception))
@@ -73,16 +74,6 @@ trait Binance[F[_]] private (
 }
 
 object Binance {
-  val baseEndpoint = uri"https://api.binance.com"
-  val exchangeInfoUriSegment: String = "api/v3/exchangeInfo"
-  val exchangeInfoRequestWeight = 20
-  val wsConnectionPermits = 300
-  val wsConnectionPermitReleaseTime = 5.minutes
-  def symbol(currency: Currency): String = currency.name
-  def streamSymbol(currency: Currency): String = currency.name.toLowerCase()
-  def tradePairSymbol(pair: TradePair): String = symbol(pair.base) ++ symbol(pair.quote)
-  def streamTradePairSymbol(pair: TradePair): String = streamSymbol(pair.base) ++ streamSymbol(pair.quote)
-
   def apply[F[_]: Logger](
       http4sHttpClient: http4s.client.Client[F],
       wsClient: http4s.client.websocket.WSClientHighLevel[F]
@@ -91,11 +82,11 @@ object Binance {
   ): F[Binance[F]] = {
     for {
       exchangeInfo <- http4sHttpClient
-        .expect[dto.ExchangeInfo](baseEndpoint.addPath(exchangeInfoUriSegment))
+        .expect[dto.ExchangeInfo](constants.exchangeInfoEndpoint)
       RateLimits(requestWeight, _) <- F.fromEither(RateLimits.of(exchangeInfo))
 
-      httpRateLimitSem <- Semaphore(requestWeight.permitsAvailable - exchangeInfoRequestWeight)
-      wsConnectionRateLimitSem <- Semaphore(wsConnectionPermits)
+      httpRateLimitSem <- Semaphore(requestWeight.permitsAvailable - constants.exchangeInfoRequestWeight)
+      wsConnectionRateLimitSem <- Semaphore(constants.wsConnectionPermits)
       binanceHttpClient = client
         .RateLimitedHttpClient.RateLimitedHttpClientLive(
           httpClient = http4sHttpClient,
@@ -111,7 +102,7 @@ object Binance {
           wsEstablishConnectionRL = client
             .rateLimits.RLSemaphoreAndReleaseTime(
               semaphore = wsConnectionRateLimitSem,
-              releaseTime = wsConnectionPermitReleaseTime
+              releaseTime = constants.wsConnectionPermitReleaseTime
             )
         )
     } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient)) {
@@ -120,7 +111,10 @@ object Binance {
 
       override def activeCurrencyPairs: F[List[TradePair]] =
         binanceHttpClient
-          .get[ExchangeInfo](baseEndpoint.addPath(exchangeInfoUriSegment).renderString, exchangeInfoRequestWeight)
+          .get[ExchangeInfo](
+            uri = constants.exchangeInfoEndpoint.renderString,
+            permitsNeeded = constants.exchangeInfoRequestWeight
+          )
           .map(
             _.symbols
               .filter(_.status == Status.TRADING)
