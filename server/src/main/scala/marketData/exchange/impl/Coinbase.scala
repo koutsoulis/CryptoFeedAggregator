@@ -25,7 +25,7 @@ class Coinbase[F[_]: Async] private (
 ) extends Exchange[F] {
   override def activeCurrencyPairs: F[List[TradePair]] = client.enabledTradePairs
 
-  override def stream[M](feedDef: FeedName[M]): fs2.Stream[F, M] = feedDef match {
+  override def stream[M](feedName: FeedName[M]): fs2.Stream[F, M] = feedName match {
     case feedName: OrderbookFeed => client.orderbook(feedName)
     case feedName: Candlesticks => client.candlesticks(feedName)
   }

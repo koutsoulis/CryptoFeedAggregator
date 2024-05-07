@@ -28,7 +28,7 @@ import myMetrics.MyMetrics
 import marketData.names.Currency
 
 trait MarketDataService[F[_]] {
-  def stream(feed: FeedName[?]): Stream[F, feed.Message]
+  def stream(feedName: FeedName[?]): Stream[F, feedName.Message]
   def activeCurrencyPairs: F[List[TradePair]]
 }
 

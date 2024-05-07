@@ -48,7 +48,7 @@ class Binance[F[_]] private (
 
   override def name: ExchangeName = ExchangeName.Binance
 
-  override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
+  override def stream[M](feedName: FeedName[M]): Stream[F, M] = feedName match {
     case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
     case Candlesticks(tradePair) => client2.candlesticks(tradePair)
   }

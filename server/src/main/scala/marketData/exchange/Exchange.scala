@@ -26,7 +26,7 @@ trait Exchange[F[_]: Async] {
     allLevel2Names.prependedAll(allCandlestickNames) // plus others
   }
 
-  def stream[M](feedDef: FeedName[M]): Stream[F, M]
+  def stream[M](feedName: FeedName[M]): Stream[F, M]
 
   def name: ExchangeName
 }
