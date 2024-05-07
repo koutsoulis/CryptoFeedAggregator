@@ -37,11 +37,16 @@ import names.ExchangeName
 import binance.constants
 import java.util.Locale
 
-trait Binance[F[_]] private (
-    client2: binance.Client[F]
+class Binance[F[_]] private (
+    client2: binance.Client[F],
+    override val allCurrencyPairs: List[TradePair]
 )(
-    implicit F: Async[F]
+    using F: Async[F]
 ) extends Exchange[F] {
+
+  override def activeCurrencyPairs: F[List[TradePair]] = client2.activeCurrencyPairs
+
+  override def name: ExchangeName = ExchangeName.Binance
 
   override def stream[M](feedDef: FeedName[M]): Stream[F, M] = feedDef match {
     case orderbookFeedDef: FeedName.OrderbookFeed => orderbookStream(orderbookFeedDef)
@@ -105,24 +110,9 @@ object Binance {
               releaseTime = constants.wsConnectionPermitReleaseTime
             )
         )
-    } yield new Binance(binance.Client(binanceHttpClient, binanceWSClient)) {
-
-      override def name: ExchangeName = ExchangeName.Binance
-
-      override def activeCurrencyPairs: F[List[TradePair]] =
-        binanceHttpClient
-          .get[ExchangeInfo](
-            uri = constants.exchangeInfoEndpoint,
-            permitsNeeded = constants.exchangeInfoRequestWeight
-          )
-          .map(
-            _.symbols
-              .filter(_.status == Status.TRADING)
-              .map { pair => pair.transformInto[TradePair] }
-          )
-
-      override def allCurrencyPairs: List[TradePair] =
-        exchangeInfo.symbols.map(_.transformInto[TradePair])
-    }
+    } yield new Binance(
+      client2 = binance.Client(binanceHttpClient, binanceWSClient),
+      allCurrencyPairs = exchangeInfo.symbols.map(_.transformInto[TradePair])
+    )
   }
 }

@@ -29,11 +29,25 @@ import client.RateLimitedWSClient
 import marketData.names.TradePair
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
+import marketData.exchange.impl.binance.dto.ExchangeInfo
+import marketData.exchange.impl.binance.dto.ExchangeInfo.SymbolPair.Status
 
 class Client[F[_]](
     httpClient: RateLimitedHttpClient[F],
     wsClient: RateLimitedWSClient[F]
 )(using F: Async[F]) {
+
+  def activeCurrencyPairs: F[List[TradePair]] = httpClient
+    .get[ExchangeInfo](
+      uri = constants.exchangeInfoEndpoint,
+      permitsNeeded = constants.exchangeInfoRequestWeight
+    )
+    .map(
+      _.symbols
+        .filter(_.status == Status.TRADING)
+        .map { pair => pair.transformInto[TradePair] }
+    )
+
   def orderbookSnapshot(tradePair: TradePair): F[Orderbook] =
     httpClient
       .get[dto.Orderbook](
