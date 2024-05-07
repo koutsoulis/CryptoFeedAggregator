@@ -19,24 +19,22 @@ import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import marketData.exchange.impl.coinbase.dto.ListProducts
 
-trait Coinbase[F[_]: Async] extends Exchange[F]
+class Coinbase[F[_]: Async] private (
+    client: coinbase.Client[F],
+    override val allCurrencyPairs: List[TradePair]
+) extends Exchange[F] {
+  override def activeCurrencyPairs: F[List[TradePair]] = client.enabledTradePairs
 
-object Coinbase {
-  class CoinbaseLive[F[_]: Async] private[Coinbase] (
-      client: coinbase.Client[F],
-      override val allCurrencyPairs: List[TradePair]
-  ) extends Coinbase {
-    override def activeCurrencyPairs: F[List[TradePair]] = client.enabledTradePairs
-
-    override def stream[M](feedDef: FeedName[M]): fs2.Stream[F, M] = feedDef match {
-      case feedName: OrderbookFeed => client.orderbook(feedName)
-      case feedName: Candlesticks => client.candlesticks(feedName)
-    }
-
-    override def name: ExchangeName = ExchangeName.Coinbase
-
+  override def stream[M](feedDef: FeedName[M]): fs2.Stream[F, M] = feedDef match {
+    case feedName: OrderbookFeed => client.orderbook(feedName)
+    case feedName: Candlesticks => client.candlesticks(feedName)
   }
 
+  override def name: ExchangeName = ExchangeName.Coinbase
+
+}
+
+object Coinbase {
   def apply[F[_]: Logger](
       wsClient: http4s.client.websocket.WSClientHighLevel[F],
       http4sHttpClient: http4s.client.Client[F]
@@ -58,7 +56,7 @@ object Coinbase {
 
     (tradePairs, coinbaseClient)
       .mapN { (tradePairs, coinbaseClient) =>
-        new CoinbaseLive(coinbaseClient, tradePairs)
+        new Coinbase(coinbaseClient, tradePairs)
       }
   }
 }
