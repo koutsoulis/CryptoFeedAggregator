@@ -28,7 +28,7 @@ import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Candlestick
 
-class Coinbase[F[_]: Async] private (
+class Coinbase[F[_]: Async](
     client: coinbase.Client[F],
     override val allCurrencyPairs: List[TradePair]
 ) extends Exchange[F] {
@@ -95,7 +95,7 @@ object Coinbase {
       http4sHttpClient: http4s.client.Client[F]
   )(using F: Async[F]): F[Coinbase[F]] = {
     val tradePairs = http4sHttpClient
-      .expect[ListProducts](coinbase.constants.advancedTradeEndpointURL.addPath("market/products"))
+      .expect[ListProducts](coinbase.constants.listPublicProductsEndpoint)
       .map(_.products)
       .map { products =>
         products

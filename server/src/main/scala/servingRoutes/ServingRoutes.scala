@@ -50,6 +50,7 @@ object ServingRoutes {
               } >>
               messagesFromClient
                 .zipRight(messagesToClient) // the client dictates via messagesFromClient the rate at which messages are sent to them
+            // TODO test this behaviour after refactoring MarketDataService
           }
         )
       }

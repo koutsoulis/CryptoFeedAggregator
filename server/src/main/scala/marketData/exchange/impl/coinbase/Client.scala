@@ -27,49 +27,59 @@ import monocle.syntax.all.*
 import client.RateLimitedHttpClient.RateLimitedHttpClientLive
 import marketData.exchange.impl.coinbase.dto.ListProducts
 import marketData.names.Currency
+import marketData.exchange.impl.coinbase.dto.CandlesMessage
+import marketData.names.FeedName.Candlesticks
+import marketData.exchange.impl.coinbase.dto.Level2Message
+import marketData.names.FeedName.OrderbookFeed
 
-class Client[F[_]: Async] private (
-    wsClient: RateLimitedWSClient[F],
-    httpClient: RateLimitedHttpClient[F]
-) {
+trait Client[F[_]: Async] {
+  def level2Messages(feedName: FeedName.OrderbookFeed): fs2.Stream[F, dto.Level2Message]
+  def candlesticks(feedName: FeedName.Candlesticks): Stream[F, dto.CandlesMessage]
+  def enabledTradePairs: F[List[TradePair]]
+}
 
-  def level2Messages(feedName: FeedName.OrderbookFeed): fs2.Stream[F, dto.Level2Message] = {
-    val subscribeRequests =
-      SubscribeRequest
+object Client {
+  class ClientLive[F[_]: Async] private[Client] (
+      wsClient: RateLimitedWSClient[F],
+      httpClient: RateLimitedHttpClient[F]
+  ) extends Client {
+
+    override def level2Messages(feedName: FeedName.OrderbookFeed): fs2.Stream[F, dto.Level2Message] = {
+      val subscribeRequests =
+        SubscribeRequest
+          .relevantAndHeartbeats(
+            feedName = feedName
+          ).map(circe.Encoder.apply[SubscribeRequest].apply)
+
+      wsClient
+        .wsConnect[dto.Level2Message](uri = constants.advancedTradeWebSocketEndpoint, subscriptionMessages = subscribeRequests)
+    }
+
+    override def candlesticks(feedName: FeedName.Candlesticks): Stream[F, dto.CandlesMessage] = {
+      val subscribeRequests = SubscribeRequest
         .relevantAndHeartbeats(
           feedName = feedName
         ).map(circe.Encoder.apply[SubscribeRequest].apply)
 
-    wsClient
-      .wsConnect[dto.Level2Message](uri = constants.advancedTradeWebSocketEndpoint, subscriptionMessages = subscribeRequests)
-  }
-
-  def candlesticks(feedName: FeedName.Candlesticks): Stream[F, dto.CandlesMessage] = {
-    val subscribeRequests = SubscribeRequest
-      .relevantAndHeartbeats(
-        feedName = feedName
-      ).map(circe.Encoder.apply[SubscribeRequest].apply)
-
-    wsClient
-      .wsConnect[dto.CandlesMessage](
-        uri = constants.advancedTradeWebSocketEndpoint,
-        subscriptionMessages = subscribeRequests
-      )
-  }
-
-  def enabledTradePairs: F[List[TradePair]] = httpClient
-    .get[ListProducts](
-      uri = constants.listPublicProductsEndpoint,
-      permitsNeeded = 1
-    ).map(_.products)
-    .map { products =>
-      products
-        .filter(!_.is_disabled).map { product => Currency(product.base_currency_id) -> Currency(product.quote_currency_id) }
-        .map(TradePair.apply)
+      wsClient
+        .wsConnect[dto.CandlesMessage](
+          uri = constants.advancedTradeWebSocketEndpoint,
+          subscriptionMessages = subscribeRequests
+        )
     }
-}
 
-object Client {
+    override def enabledTradePairs: F[List[TradePair]] = httpClient
+      .get[ListProducts](
+        uri = constants.listPublicProductsEndpoint,
+        permitsNeeded = 1
+      ).map(_.products)
+      .map { products =>
+        products
+          .filter(!_.is_disabled).map { product => Currency(product.base_currency_id) -> Currency(product.quote_currency_id) }
+          .map(TradePair.apply)
+      }
+  }
+
   def apply[F[_]: Async: Logger](
       wsClient: http4s.client.websocket.WSClientHighLevel[F],
       http4sHttpClient: http4s.client.Client[F]
@@ -96,10 +106,24 @@ object Client {
       }
 
     (wsClientWrapped, httpClientWrapped).mapN { case (wsClientWrapped, httpClientWrapped) =>
-      new Client(
+      new ClientLive(
         wsClient = wsClientWrapped,
         httpClient = httpClientWrapped
       )
     }
+  }
+
+  def stub[F[_]](using Async[F])(
+      level2MessagesStub: (feedName: FeedName.OrderbookFeed) => fs2.Stream[F, dto.Level2Message] = _ => ???,
+      candlesticksStub: (feedName: FeedName.Candlesticks) => Stream[F, dto.CandlesMessage] = _ => ???,
+      enabledTradePairsStub: F[List[TradePair]] = List.empty.pure
+  ): Client[F] = new Client {
+
+    override def level2Messages(feedName: OrderbookFeed): Stream[F, Level2Message] = level2MessagesStub(feedName)
+
+    override def candlesticks(feedName: Candlesticks): Stream[F, CandlesMessage] = candlesticksStub(feedName)
+
+    override def enabledTradePairs: F[List[TradePair]] = enabledTradePairsStub
+
   }
 }
