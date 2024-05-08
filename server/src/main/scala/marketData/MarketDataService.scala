@@ -53,7 +53,7 @@ object MarketDataService {
      * @param signal
      *   Reports the updates of the backing data feed
      * @param finalizer
-     *   Finalizer to close the backing data feed when subscribersCount reaches 0
+     *   Finalizer to close the backing data feed when subscribersCount drops to 0
      * @param subscribersCount
      *   Number of users currently sharing the backing data feed
      */
@@ -92,6 +92,7 @@ object MarketDataService {
 
         new MarketDataService[F] {
 
+          // TODO: expose Signal instead of Stream to enable testing (move Signal -> Stream logic downstream)
           override def stream(feed: FeedName[?]): Stream[F, feed.Message] = {
             def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
               locks(feed).lock.surround {

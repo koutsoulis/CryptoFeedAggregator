@@ -12,7 +12,7 @@ import marketData.names.TradePair
 import org.http4s.implicits.uri
 import org.http4s
 import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant
-import marketData.exchange.impl.coinbase.dto.Level2Message
+import marketData.exchange.impl.coinbase.dto
 import _root_.io.scalaland.chimney.syntax.*
 import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Orderbook
@@ -28,12 +28,12 @@ import client.RateLimitedHttpClient.RateLimitedHttpClientLive
 import marketData.exchange.impl.coinbase.dto.ListProducts
 import marketData.names.Currency
 
-class Client[F[_]] private (
+class Client[F[_]: Async] private (
     wsClient: RateLimitedWSClient[F],
     httpClient: RateLimitedHttpClient[F]
-)(using F: Async[F]) {
-  def orderbook(feedName: FeedName.OrderbookFeed): Stream[F, marketData.domain.Orderbook] = {
+) {
 
+  def level2Messages(feedName: FeedName.OrderbookFeed): fs2.Stream[F, dto.Level2Message] = {
     val subscribeRequests =
       SubscribeRequest
         .relevantAndHeartbeats(
@@ -41,44 +41,10 @@ class Client[F[_]] private (
         ).map(circe.Encoder.apply[SubscribeRequest].apply)
 
     wsClient
-      .wsConnect[Level2Message](uri = constants.advancedTradeWebSocketEndpoint, subscriptionMessages = subscribeRequests)
-      .collect { case m: Relevant => m }
-      .map(_.events)
-      .flatMap(Stream.emits)
-      .pull.uncons1.flatMap {
-        case Some((firstEvent, subsequentEvents)) =>
-          val updatesTail = subsequentEvents.evalTapChunk { event =>
-            F.raiseWhen(event.`type` != Relevant.Event.Type.update)(
-              new Exception(s"Level2Message Event of type ${event.`type`} encountered past the head")
-            )
-          }
-          val orderbooksStream = firstEvent.toOrderbook match {
-            case Left(exception) => Stream.raiseError(exception)
-            case Right(orderbook) =>
-              updatesTail.scan(orderbook) { case (orderbook, updateEvent) =>
-                updateEvent.updates.foldLeft(orderbook) { case (orderbook, update) =>
-                  update.side match {
-                    case Side.bid =>
-                      orderbook
-                        .focus(_.bidLevelToQuantity).modify(_.updatedWith(update.price_level) { _ =>
-                          Some(update.new_quantity).filter(_ > 0)
-                        })
-                    case Side.offer =>
-                      orderbook
-                        .focus(_.askLevelToQuantity).modify(_.updatedWith(update.price_level) { _ =>
-                          Some(update.new_quantity).filter(_ > 0)
-                        })
-                  }
-                }
-              }
-          }
-          orderbooksStream.pull.echo
-
-        case _unexpected => Pull.raiseError(new Exception(s"unexpected case ${_unexpected.toString().take(200)}"))
-      }.stream
+      .wsConnect[dto.Level2Message](uri = constants.advancedTradeWebSocketEndpoint, subscriptionMessages = subscribeRequests)
   }
 
-  def candlesticks(feedName: FeedName.Candlesticks): Stream[F, marketData.domain.Candlestick] = {
+  def candlesticks(feedName: FeedName.Candlesticks): Stream[F, dto.CandlesMessage] = {
     val subscribeRequests = SubscribeRequest
       .relevantAndHeartbeats(
         feedName = feedName
@@ -88,12 +54,7 @@ class Client[F[_]] private (
       .wsConnect[dto.CandlesMessage](
         uri = constants.advancedTradeWebSocketEndpoint,
         subscriptionMessages = subscribeRequests
-      ).collect { case relevant: dto.CandlesMessage.Relevant => relevant }
-      .map(_.events.lastOption) // if more than one, consider all but last one out of date
-      .flattenOption
-      .map(_.candles.lastOption) // if more than one, consider all but last one out of date
-      .flattenOption
-      .map(_.transformInto[marketData.domain.Candlestick])
+      )
   }
 
   def enabledTradePairs: F[List[TradePair]] = httpClient
