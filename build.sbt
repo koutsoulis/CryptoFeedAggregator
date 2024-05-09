@@ -1,8 +1,7 @@
 ThisBuild / version := "0.1.1-SNAPSHOT"
 // ThisBuild / name := "typelevel-project"
 
-lazy val rockthejvm = "com.rockthejvm"
-lazy val scala3Version = "3.4.0"
+lazy val scala3Version = "3.4.1"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common - contains domain model
@@ -24,7 +23,6 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(
     name := "common",
     scalaVersion := scala3Version,
-    organization := rockthejvm,
     scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
@@ -80,7 +78,6 @@ lazy val app = (project in file("app"))
   .settings(
     name := "app",
     scalaVersion := scala3Version,
-    organization := rockthejvm,
     scalacOptions ++= Seq("-Vprofile"),
     libraryDependencies ++= Seq(
       "io.indigoengine" %%% "tyrian-io" % tyrianVersion,
@@ -131,7 +128,6 @@ lazy val server = (project in file("server"))
   .settings(
     name := "typelevel-project",
     scalaVersion := scala3Version,
-    organization := rockthejvm,
     scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
     Defaults.itSettings,
     libraryDependencies ++= Seq(

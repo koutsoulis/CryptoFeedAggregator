@@ -86,8 +86,8 @@ object MarketFeedSelectionStage {
   }
 
   object SelectFeed {
-    type LegalFeedNameString = "Orderbook" | "Candlesticks" | "Stub"
-    val feedNames: List[LegalFeedNameString] = List("Orderbook", "Stub", "Candlesticks")
+    type LegalFeedNameString = "Orderbook" | "Candlesticks"
+    val feedNames: List[LegalFeedNameString] = List("Orderbook", "Candlesticks")
   }
 
   case class SelectCurrency1(
@@ -100,7 +100,7 @@ object MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView.appended {
       val options: List[Html[Msg]] =
         tradePairs
-          .keySet.toList.map(_.name).prepended("No currency selected")
+          .keySet.toList.map(_.name).sorted.prepended("No currency selected")
           .map(tyrian.Html.option[Msg](_))
 
       select(
@@ -132,7 +132,7 @@ object MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView.appended {
       val options: List[Html[Msg]] =
         secondComponentForFixedFirst
-          .toList.map(_.name).prepended("No currency selected")
+          .toList.map(_.name).sorted.prepended("No currency selected")
           .map(tyrian.Html.option[Msg](_))
 
       select(
