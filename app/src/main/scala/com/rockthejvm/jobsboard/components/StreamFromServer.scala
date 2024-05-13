@@ -10,7 +10,6 @@ import org.http4s.client.websocket
 import org.http4s.client.websocket.WSDataFrame
 import org.http4s.client.websocket.WSFrame.Text
 import org.http4s.client.websocket.WSFrame.Binary
-import com.rockthejvm.Example
 import _root_.io.circe
 import monocle.syntax.all.*
 import fs2.Stream
@@ -42,7 +41,7 @@ object StreamFromServer {
           .dom.WebSocketClient[IO].connectHighLevel(
             websocket.WSRequest(
               uri = http4s
-                .Uri.fromString(s"ws://127.0.0.1:8080/${exchange.toString}")
+                .Uri.fromString(s"wss://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}")
                 .map(_.withQueryParam("feedName", feedName: FeedName[?]))
                 .getOrElse(None.get)
             )

@@ -56,8 +56,10 @@ object ServingRoutes {
       }
     }
 
-    override def httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) / "activeCurrencyPairs" =>
-      marketDataServiceByExchange(exchange).activeCurrencyPairs.map(Response[F]().withEntity[List[TradePair]])
+    override def httpRoutes: HttpRoutes[F] = HttpRoutes.of[F] {
+      case GET -> Root / ExchangeName(exchange) / "activeCurrencyPairs" =>
+        marketDataServiceByExchange(exchange).activeCurrencyPairs.map(Response[F]().withEntity[List[TradePair]])
+      case GET -> Root => Async[F].pure(Response(Ok))
     }
   }
 

@@ -34,6 +34,8 @@ import org.http4s.server.middleware.CORS
 import marketData.names.TradePair
 import org.typelevel.log4cats.Logger
 import servingRoutes.ServingRoutes
+import com.comcast.ip4s.Port
+import com.comcast.ip4s.Host
 
 trait Server
 
@@ -46,6 +48,8 @@ object Server {
   ): Resource[F, Server] = {
     http4s
       .ember.server.EmberServerBuilder.default
+      .withHost(Host.fromString("0.0.0.0").get)
+      .withPort(Port.fromInt(4041).get)
       .withHttpWebSocketApp { wsBuilder =>
         HttpApp {
           servingRoutes

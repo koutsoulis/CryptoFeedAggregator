@@ -36,11 +36,8 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
       "co.fs2" %%% "fs2-scodec" % fs2Version,
       "org.gnieh" %%% "fs2-data-json" % "1.10.0",
       "org.gnieh" %%% "fs2-data-json-circe" % "1.10.0",
-      "com.softwaremill.sttp.tapir" %%% "tapir-core" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %%% "tapir-json-circe" % tapirVersion,
       "dev.optics" %%% "monocle-core" % monocleVersion,
       "dev.optics" %%% "monocle-macro" % monocleVersion,
-      "org.typelevel" %%% "spire" % spireVersion,
       "io.bullet" %%% "borer-core" % "1.14.0",
       "io.bullet" %%% "borer-derivation" % "1.14.0",
       "io.bullet" %%% "borer-compat-scodec" % "1.14.0",
@@ -123,13 +120,11 @@ lazy val prometheus4catsVersion = "2.0.0"
 import org.typelevel.scalacoptions.ScalacOptions
 
 lazy val server = (project in file("server"))
-  .configs(IntegrationTest)
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
-    name := "typelevel-project",
+    name := "typelevel-project-backend",
     scalaVersion := scala3Version,
     scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
-    Defaults.itSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "kittens" % kittensVersion,
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -141,22 +136,15 @@ lazy val server = (project in file("server"))
       "org.http4s" %% "http4s-prometheus-metrics" % "0.24.6",
       "com.permutive" %% "prometheus4cats" % prometheus4catsVersion,
       "com.permutive" %% "prometheus4cats-java" % prometheus4catsVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
-      "org.tpolecat" %% "doobie-core" % doobieVersion,
-      "org.tpolecat" %% "doobie-hikari" % doobieVersion,
-      "org.tpolecat" %% "doobie-postgres" % doobieVersion,
-      "org.tpolecat" %% "doobie-weaver" % doobieVersion % Test,
       "com.github.pureconfig" %% "pureconfig-core" % pureConfigVersion,
       "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       // "org.slf4j" % "slf4j-simple" % slf4jVersion,
       "org.typelevel" %% "log4cats-noop" % log4catsVersion,
       // "org.scalameta" %% "munit" % munitVersion % Test,
       // "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % "test",
-      "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % "it,test",
+      "com.disneystreaming" %% "weaver-cats" % weaverTestVersion % Test,
       "org.typelevel" %% "cats-effect-testing-scalatest" % scalaTestCatsEffectVersion % Test,
       "org.testcontainers" % "testcontainers" % testContainerVersion % Test,
-      "org.testcontainers" % "postgresql" % testContainerVersion % Test,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "org.typelevel" %% "cats-mtl" % catsMtlVersion,
       "commons-validator" % "commons-validator" % apacheCommonsVersion,
@@ -164,7 +152,6 @@ lazy val server = (project in file("server"))
       "io.monix" %% "newtypes-circe-v0-14" % monixNewtypesVersion,
       "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
-      "io.zonky.test" % "embedded-postgres" % embeddedPostgresVersion,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
       "is.cir" %% "ciris" % "3.5.0",
       "io.github.keirlawson" %% "ciris-aws-secretsmanager" % "7.0.0",
@@ -183,7 +170,7 @@ lazy val server = (project in file("server"))
       ScalacOptions.fatalWarnings
     ),
     dockerExposedPorts ++= Seq(4041),
-    dockerBaseImage := "sbtscala/scala-sbt:eclipse-temurin-focal-11.0.22_7_1.9.8_3.3.1",
+    dockerBaseImage := "sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.0_3.4.1",
     Docker / daemonUserUid := None,
     Docker / daemonUser := "daemon",
     Docker / dockerRepository := Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),

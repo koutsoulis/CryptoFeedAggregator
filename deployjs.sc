@@ -29,16 +29,7 @@ val out =
 
     // package all of front end and place it in buildTempDir
     _ <- eith {
-      os.proc(
-        "npx",
-        "parcel",
-        "build",
-        "index.html",
-        "--dist-dir",
-        buildTempDir.toString,
-        "--log-level",
-        "info",
-        "--no-source-maps")
+      os.proc("npx", "parcel", "build", "index.html", "--dist-dir", buildTempDir.toString, "--log-level", "info", "--no-source-maps")
         .call(cwd = appDir)
     }
 
@@ -56,6 +47,10 @@ val out =
 
     _ <- eith {
       os.remove.all(buildTempDir)
+    }
+
+    _ <- eith {
+      os.remove.apply(appDir / "main.js")
     }
 
   } yield ()

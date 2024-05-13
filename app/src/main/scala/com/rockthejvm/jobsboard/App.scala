@@ -16,7 +16,6 @@ import org.http4s.client.websocket
 import org.http4s.client.websocket.WSDataFrame
 import org.http4s.client.websocket.WSFrame.Text
 import org.http4s.client.websocket.WSFrame.Binary
-import com.rockthejvm.Example
 import _root_.io.circe
 import monocle.syntax.all.*
 import fs2.Stream
@@ -43,6 +42,9 @@ import marketData.names.TradePair
 import marketData.names.FeedName.Candlesticks
 import marketData.domain.Candlestick
 import com.rockthejvm.jobsboard.components.CandlestickView
+import org.http4s.Request
+import org.http4s.Method
+import org.http4s.Header
 
 object App {
   type Msg = NoOperation.type | Orderbook | Candlestick | MarketFeedSelectionStage | Sub[IO, ?] | InitTradePairs
@@ -70,12 +72,18 @@ class App extends TyrianIOApp[Msg, Model] {
 
     val client = http4s.dom.FetchClientBuilder[IO].create
 
-    def allPairs(exchange: ExchangeName): IO[Map[Currency, Set[Currency]]] = client
-      .expect[List[TradePair]](
-        uri = http4s
-          .Uri.fromString(s"http://127.0.0.1:8080/${exchange.toString}/activeCurrencyPairs")
-          .getOrElse(None.get)
-      ).flatTap(IO.println).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
+    def allPairs(exchange: ExchangeName): IO[Map[Currency, Set[Currency]]] = {
+      val allPairsReq = Request[IO](uri = http4s
+        .Uri.fromString(s"https://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}/activeCurrencyPairs")
+        .getOrElse(None.get))
+      // .putHeaders("Origin" -> "https://somewhere.com")
+
+      client
+        .expect[List[TradePair]](
+          allPairsReq
+        ).flatTap(IO.println).map { _.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap }
+        .onError(err => IO.println(err.toString()))
+    }
 
     val allPairsPerExchange: IO[Map[ExchangeName, Map[Currency, Set[Currency]]]] = ExchangeName
       .values.toList.map { exchange => allPairs(exchange).map(exchange -> _) }
