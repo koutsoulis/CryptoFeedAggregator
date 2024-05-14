@@ -1,11 +1,12 @@
 {
     "scripts": {
-        "start": "parcel index.html --no-cache --dist-dir dist --log-level info",
-        "dev-start": "parcel index-dev.html --no-cache --dist-dir dist --log-level info",
+        "start": "parcel index.html --no-cache --dist-dir dist --log-level info --no-source-maps",
+        "dev-start": "cross-env NODE_ENV=dev parcel index-dev.html --no-cache --dist-dir dist --log-level info",
         "build": "parcel build index.html --dist-dir build-destination-temp --log-level info --no-source-maps",
         "dev-build": "cd .. && sbt fastLinkJS && cd app && parcel build index.html --dist-dir dist --log-level info"
     },
     "devDependencies": {
+        "cross-env": "^7.0.3",
         "parcel": "^2.1.0",
         "process": "^0.11.10",
         "sass": "^1.34.0"

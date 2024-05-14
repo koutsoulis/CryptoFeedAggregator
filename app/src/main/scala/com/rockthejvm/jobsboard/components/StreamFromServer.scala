@@ -41,7 +41,7 @@ object StreamFromServer {
           .dom.WebSocketClient[IO].connectHighLevel(
             websocket.WSRequest(
               uri = http4s
-                .Uri.fromString(s"wss://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}")
+                .Uri.fromString(s"ws://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}") // wss for prod
                 .map(_.withQueryParam("feedName", feedName: FeedName[?]))
                 .getOrElse(None.get)
             )

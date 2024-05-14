@@ -30,6 +30,15 @@ object OrderbookView {
         )
       )(elems)
 
+      def legendRow(elems: List[tyrian.Elem[Msg]]): tyrian.Html[Msg] = div(
+        style(
+          CSS.height("30px") |+|
+            CSS.width("100%") |+|
+            CSS.position("relative") |+|
+            CSS.borderBottom("2px solid black")
+        )
+      )(elems)
+
       def row(elems: List[tyrian.Elem[Msg]]): tyrian.Html[Msg] = div(
         style(
           CSS.display("flex") |+|
@@ -58,33 +67,57 @@ object OrderbookView {
         )
       )("")
 
-      val bidRows: List[tyrian.Html[Msg]] = bids.map { case (price, volume) =>
-        outerRow(
-          List(
-            percentageBar(width = volume * 100 / maxBidsVolume, color = "green", extendFromThe = "right"),
-            row(
-              List(
-                cell(price.toString),
-                cell(volume.toString)
+      val bidRows: List[tyrian.Html[Msg]] = bids
+        .map { case (price, volume) =>
+          outerRow(
+            List(
+              percentageBar(width = volume * 100 / maxBidsVolume, color = "green", extendFromThe = "right"),
+              row(
+                List(
+                  cell(price.toString),
+                  cell(volume.toString)
+                )
+              )
+            )
+          )
+        }.prepended(
+          legendRow(
+            List(
+              row(
+                List(
+                  cell("Bid price"),
+                  cell("Bid volume")
+                )
               )
             )
           )
         )
-      }
 
-      val askRows = asks.map { case (price, volume) =>
-        outerRow(
-          List(
-            percentageBar(width = volume * 100 / maxAsksVolume, color = "red", extendFromThe = "left"),
-            row(
-              List(
-                cell(price.toString),
-                cell(volume.toString)
+      val askRows = asks
+        .map { case (price, volume) =>
+          outerRow(
+            List(
+              percentageBar(width = volume * 100 / maxAsksVolume, color = "red", extendFromThe = "left"),
+              row(
+                List(
+                  cell(price.toString),
+                  cell(volume.toString)
+                )
+              )
+            )
+          )
+        }.prepended(
+          legendRow(
+            List(
+              row(
+                List(
+                  cell("Ask price"),
+                  cell("Ask volume")
+                )
               )
             )
           )
         )
-      }
 
       div(style(CSS.display("flex")))(
         div(style(CSS.flex("1")))(

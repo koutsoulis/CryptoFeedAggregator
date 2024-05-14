@@ -153,11 +153,11 @@ lazy val server = (project in file("server"))
       "com.github.jwt-scala" %% "jwt-circe" % "9.4.5",
       "com.softwaremill.sttp.client3" %% "http4s-backend" % sttpClient3Version,
       "software.amazon.awssdk" % "aws-sdk-java" % "2.24.0",
-      "is.cir" %% "ciris" % "3.5.0",
       "io.github.keirlawson" %% "ciris-aws-secretsmanager" % "7.0.0",
       "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test,
       "com.lihaoyi" %% "os-lib" % "0.10.0" % Test,
-      "com.lihaoyi" %% "pprint" % "0.9.0"
+      "com.lihaoyi" %% "pprint" % "0.9.0",
+      "is.cir" %% "ciris" % "3.5.0"
     ),
     semanticdbEnabled := true,
     autoAPIMappings := true,
