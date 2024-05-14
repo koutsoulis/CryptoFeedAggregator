@@ -1,22 +1,18 @@
-import cats.effect.*
-import org.http4s.ember.client.EmberClientBuilder
-import pureconfig.ConfigReader.Result
-import pureconfig.ConfigSource
-import pureconfig.error.ConfigReaderFailures
-import org.typelevel.log4cats.slf4j.Slf4jFactory
-import org.http4s.jdkhttpclient.JdkWSClient
+import _root_.server.Server
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
+import fs2.io.net.Network
+import marketData.MarketDataService
+import marketData.exchange.Exchange
 import myMetrics.MyMetrics
 import names.ExchangeName
 import org.http4s.client.middleware
-import _root_.server.Server
-import marketData.exchange.Exchange
-import marketData.MarketDataService
-import fs2.io.net.Network
-import servingRoutes.ServingRoutes
+import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.jdkhttpclient.JdkWSClient
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import servingRoutes.ServingRoutes
 
 object MyProjectMain extends IOApp.Simple {
   override def run: IO[Unit] = {

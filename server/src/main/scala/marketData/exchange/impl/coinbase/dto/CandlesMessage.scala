@@ -2,15 +2,10 @@ package marketData.exchange.impl.coinbase.dto
 
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import mouse.all.*
 import _root_.io.scalaland.chimney
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
+import cats.*
+import cats.syntax.all.*
 import marketData.domain.Candlestick
-import scala.util.Try
 
 // https://docs.cloud.coinbase.com/advanced-trade/docs/ws-channels#candles-channel
 

@@ -1,33 +1,29 @@
 package servingRoutes
 
-import weaver.SimpleIOSuite
-import marketData.MarketDataService
-import myMetrics.MyMetrics
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import mouse.all.*
-import cats.effect.*
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.noop.NoOpLogger
-import org.http4s.client.testkit.WSTestClient
-import marketData.names.FeedName
-import marketData.names.FeedName.Candlesticks
-import marketData.domain.Candlestick
-import fs2.Stream
-import names.ExchangeName
-import marketData.names.TradePair
-import marketData.names.Currency
-import org.http4s.client.websocket.WSRequest
-import org.http4s.Uri
-import org.http4s.client.websocket.WSConnectionHighLevel
-import org.http4s.client.websocket.WSDataFrame
-import org.http4s.client.websocket.WSFrame
-import org.http4s.client.websocket.WSFrame.Text
-import org.http4s.client.websocket.WSFrame.Binary
 import _root_.io.bullet.borer
 import _root_.io.bullet.borer.compat.scodec.*
-import _root_.io.bullet.borer.derivation.ArrayBasedCodecs.*
+import cats.*
+import cats.effect.*
+import cats.syntax.all.*
+import fs2.Stream
+import marketData.MarketDataService
+import marketData.domain.Candlestick
+import marketData.names.Currency
+import marketData.names.FeedName
+import marketData.names.FeedName.Candlesticks
+import marketData.names.TradePair
+import mouse.all.*
+import myMetrics.MyMetrics
+import names.ExchangeName
+import org.http4s.Uri
+import org.http4s.client.testkit.WSTestClient
+import org.http4s.client.websocket.WSFrame
+import org.http4s.client.websocket.WSFrame.Binary
+import org.http4s.client.websocket.WSFrame.Text
+import org.http4s.client.websocket.WSRequest
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.noop.NoOpLogger
+import weaver.SimpleIOSuite
 
 object ServingRoutesSpec extends SimpleIOSuite {
   val testFeedName = Candlesticks(TradePair(base = Currency("BTC"), quote = Currency("ETH")))

@@ -1,31 +1,21 @@
 package marketData
 
-import fs2.Stream
-import fs2.concurrent.Topic
-
 import cats.*
-import cats.data.*
-import cats.syntax.all.*
-
 import cats.effect.*
 import cats.effect.std.MapRef
 import cats.effect.std.Mutex
-import cats.effect.std.AtomicCell
-
-import marketData.exchange.Exchange
+import cats.syntax.all.*
+import fs2.Stream
 import fs2.concurrent.Signal
-import fs2.concurrent.SignallingRef
-import marketData.names.FeedName.OrderbookFeed
+import marketData.exchange.Exchange
+import marketData.names.Currency
+import marketData.names.TradePair
+import myMetrics.MyMetrics
+import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
+
 import scala.collection.concurrent.TrieMap
 
-import org.http4s.client.websocket.WSClientHighLevel
-import org.http4s.jdkhttpclient.JdkWSClient
-import cats.effect.std.Queue
-import marketData.names.TradePair
 import names.FeedName
-import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
-import myMetrics.MyMetrics
-import marketData.names.Currency
 
 trait MarketDataService[F[_]] {
   def stream(feedName: FeedName[?]): Stream[F, feedName.Message]

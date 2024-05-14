@@ -1,26 +1,19 @@
 package myMetrics
 
-import org.http4s
-import org.http4s.server.middleware
-import org.http4s.metrics.prometheus.{Prometheus, PrometheusExportService}
-import cats.effect.*
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
-import org.http4s.Method
-import org.http4s.Status
-import fs2.io.net.Network
+import marketData.names.FeedName
+import myMetrics.impl.ConcurrentStreamsGaugeFactory
+import names.ExchangeName
+import org.http4s
 import org.http4s.HttpRoutes
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.http4s.metrics.prometheus.Prometheus
+import org.http4s.metrics.prometheus.PrometheusExportService
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.noop.NoOpLogger
 import prometheus4cats.*
 import prometheus4cats.javasimpleclient.JavaMetricRegistry
-import org.typelevel.log4cats.Logger
-import marketData.names.FeedName
-import marketData.names.FeedName.OrderbookFeed
-import org.typelevel.log4cats.slf4j.Slf4jFactory
-import org.typelevel.log4cats.noop.NoOpLogger
-import names.ExchangeName
-import myMetrics.impl.ConcurrentStreamsGaugeFactory
 
 object MyMetrics {
 

@@ -1,34 +1,32 @@
 package client
 
-import weaver.SimpleIOSuite
-import org.http4s
-import org.http4s.client.websocket
-import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.dsl.*
-import org.http4s.implicits.*
-import org.http4s.Uri
-import cats.effect.*
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import org.http4s.client.websocket.WSConnectionHighLevel
-import org.http4s.client.websocket.WSRequest
-import concurrent.duration.DurationInt
-import org.http4s.client.websocket.WSDataFrame
-import org.http4s.client.websocket.WSFrame.Close
-import cats.effect.kernel.DeferredSource
-import fs2.Stream
-import org.http4s.client.websocket.WSFrame
-import scala.concurrent.duration.Duration
-import org.http4s.client.websocket.WSClientHighLevel
-import cats.effect.std.Semaphore
-import client.rateLimits.RLSemaphoreAndReleaseTime
-import cats.effect.testkit.TestControl
 import _root_.io.circe
+import cats.*
+import cats.effect.*
+import cats.effect.kernel.DeferredSource
+import cats.effect.std.Semaphore
+import cats.effect.testkit.TestControl
+import cats.syntax.all.*
+import client.rateLimits.RLSemaphoreAndReleaseTime
 import client.testUtils.*
-import scala.concurrent.duration.FiniteDuration
-import org.typelevel.log4cats.slf4j.Slf4jFactory
+import fs2.Stream
+import org.http4s
+import org.http4s.Uri
+import org.http4s.client.websocket
+import org.http4s.client.websocket.WSClientHighLevel
+import org.http4s.client.websocket.WSConnectionHighLevel
+import org.http4s.client.websocket.WSDataFrame
+import org.http4s.client.websocket.WSFrame
+import org.http4s.client.websocket.WSFrame.Close
+import org.http4s.client.websocket.WSRequest
+import org.http4s.implicits.*
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jFactory
+import weaver.SimpleIOSuite
+
+import scala.concurrent.duration.FiniteDuration
+
+import concurrent.duration.DurationInt
 
 object RateLimitedWSClientSpec extends SimpleIOSuite {
   implicit val loggerFactory: Slf4jFactory[IO] = Slf4jFactory.create[IO]

@@ -1,20 +1,19 @@
 package marketData.exchange.impl
 
-import marketData.exchange.impl.coinbase
-import weaver.IOSuite
-import fs2.Stream
-import marketData.exchange.impl.coinbase.dto.Level2Message
-import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
-import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event
-import cats.effect.*
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
-import mouse.all.*
+import fs2.Stream
+import marketData.domain.Orderbook
+import marketData.exchange.impl.coinbase.dto.Level2Message
+import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event
+import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
+import marketData.names.Currency
 import marketData.names.FeedName.OrderbookFeed
 import marketData.names.TradePair
-import marketData.names.Currency
-import marketData.domain.Orderbook
+import mouse.all.*
+import weaver.IOSuite
+
 import scala.collection.immutable.TreeMap
 
 // IDEA: ask chatgpt to generate test input as JSON; counterargument: breaks encapsulation as it relies on (the stubbed component's) coinbase.Client private logic to parse it

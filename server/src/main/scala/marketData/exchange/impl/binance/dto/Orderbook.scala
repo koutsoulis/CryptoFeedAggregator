@@ -1,14 +1,9 @@
 package marketData.exchange.impl.binance.dto
 
-import marketData.exchange.impl.binance.domain
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
 import _root_.io.scalaland.chimney
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
+import marketData.exchange.impl.binance.domain
 
 // https://binance-docs.github.io/apidocs/spot/en/#order-book
 

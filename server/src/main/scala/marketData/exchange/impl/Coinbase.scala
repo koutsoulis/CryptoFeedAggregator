@@ -1,32 +1,28 @@
 package marketData.exchange.impl
 
-import marketData.exchange.Exchange
-import cats.effect.*
-import marketData.names.FeedName
-import marketData.names.TradePair
-import marketData.names.FeedName.OrderbookFeed
-import marketData.names.FeedName.Candlesticks
-import marketData.names.Currency
+import _root_.io.scalaland.chimney.syntax.*
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
-import mouse.all.*
-import org.typelevel.log4cats.Logger
+import fs2.Pull
+import fs2.Stream
+import marketData.domain.Candlestick
+import marketData.domain.Orderbook
+import marketData.exchange.Exchange
+import marketData.exchange.impl.coinbase.dto
+import marketData.exchange.impl.coinbase.dto.Level2Message
+import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
+import marketData.exchange.impl.coinbase.dto.ListProducts
+import marketData.names.Currency
+import marketData.names.FeedName
+import marketData.names.FeedName.Candlesticks
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.TradePair
+import monocle.syntax.all.*
 import names.ExchangeName
 import org.http4s
 import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.dsl.io.*
-import org.http4s.implicits.*
-import marketData.exchange.impl.coinbase.dto.ListProducts
-import marketData.exchange.impl.coinbase.dto.Level2Message
-import fs2.{Stream, Pull}
-import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
-import marketData.exchange.impl.coinbase.dto
-import marketData.domain.Orderbook
-import monocle.syntax.all.*
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
-import marketData.domain.Candlestick
+import org.typelevel.log4cats.Logger
 
 class Coinbase[F[_]: Async](
     client: coinbase.Client[F],

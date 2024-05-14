@@ -1,16 +1,18 @@
 package marketData.exchange.impl.binance.domain
 
-import scala.concurrent.duration.Duration
-import concurrent.duration.DurationInt
-import marketData.exchange.impl.binance.dto
-import cats.MonadThrow
-import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.Interval.{SECOND, MINUTE, HOUR, DAY}
 import cats.*
-import cats.data.*
 import cats.syntax.all.*
-import cats.data.Validated.Valid
+import marketData.exchange.impl.binance.dto
 import marketData.exchange.impl.binance.dto.ExchangeInfo
+import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.Interval.DAY
+import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.Interval.HOUR
+import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.Interval.MINUTE
+import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.Interval.SECOND
 import marketData.exchange.impl.binance.dto.ExchangeInfo.RateLimit.RLType
+
+import scala.concurrent.duration.Duration
+
+import concurrent.duration.DurationInt
 
 final case class RateLimits(
     requestWeight: RateLimits.RateLimit,

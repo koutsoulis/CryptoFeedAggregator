@@ -1,12 +1,9 @@
 package marketData.exchange.impl.binance.domain
 
-import marketData.exchange.impl.binance.dto
 import _root_.io.scalaland.chimney
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
 import cats.*
-import cats.data.*
 import cats.syntax.all.*
+import marketData.exchange.impl.binance.dto
 
 final case class OrderbookUpdate(
     firstUpdateId: Long,

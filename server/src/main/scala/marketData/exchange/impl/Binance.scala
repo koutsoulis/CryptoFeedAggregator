@@ -1,41 +1,28 @@
 package marketData.exchange.impl
 
-import marketData.exchange.Exchange
-import marketData.names.FeedName
-import marketData.names.Currency
-import org.http4s.client.websocket.WSRequest
-import marketData.names.FeedName.OrderbookFeed
-import cats.effect.*
+import _root_.io.scalaland.chimney.syntax.*
 import cats.*
-import cats.data.*
+import cats.effect.*
+import cats.effect.std.Semaphore
 import cats.syntax.all.*
+import fs2.Pull
+import fs2.Stream
+import marketData.exchange.Exchange
+import marketData.exchange.impl.binance.domain.Orderbook
+import marketData.exchange.impl.binance.domain.OrderbookUpdate
+import marketData.exchange.impl.binance.domain.RateLimits
+import marketData.exchange.impl.binance.dto.ExchangeInfo
+import marketData.names.FeedName
+import marketData.names.FeedName.Candlesticks
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.TradePair
+import names.ExchangeName
 import org.http4s
 import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.Uri
-import org.http4s.Request
-import org.http4s.dsl.*
-import org.http4s.implicits.*
-import cats.MonadThrow
-import scala.concurrent.duration.*
-import binance.dto
-import marketData.exchange.impl.binance.domain.RateLimits
-import cats.effect.std.Semaphore
-import fs2.{Stream, Pull}
-import fs2.concurrent.Signal
-import org.http4s.client.websocket.WSFrame.Text
-import org.http4s.client.websocket.WSFrame.Binary
-import _root_.io.circe
-import marketData.exchange.impl.binance.domain.{OrderbookUpdate, Orderbook, RateLimits}
-import binance.dto.ExchangeInfo.SymbolPair.Status
-import marketData.names.TradePair
-import marketData.exchange.impl.binance.dto.ExchangeInfo
-import _root_.io.scalaland.chimney.syntax.*
-import marketData.names.FeedName.Candlesticks
-import marketData.exchange.impl.binance.dto.Candlestick
 import org.typelevel.log4cats.Logger
-import names.ExchangeName
+
+import binance.dto
 import binance.constants
-import java.util.Locale
 
 class Binance[F[_]] private (
     client2: binance.Client[F],

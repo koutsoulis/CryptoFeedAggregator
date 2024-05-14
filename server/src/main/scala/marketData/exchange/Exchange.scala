@@ -1,17 +1,14 @@
 package marketData.exchange
 
-import marketData.names.Currency
-import marketData.names.TradePair
-import marketData.names.FeedName
-import fs2.Stream
-import cats.effect.*
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
-import mouse.all.*
-import marketData.domain.Candlestick
-import marketData.names.FeedName.OrderbookFeed
+import fs2.Stream
+import marketData.names.Currency
+import marketData.names.FeedName
 import marketData.names.FeedName.Candlesticks
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.TradePair
 import names.ExchangeName
 
 trait Exchange[F[_]: Async] {

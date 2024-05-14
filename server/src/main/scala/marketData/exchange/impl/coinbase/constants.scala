@@ -1,10 +1,10 @@
 package marketData.exchange.impl.coinbase
 
-import scala.concurrent.duration.DurationInt
 import marketData.names.TradePair
-import cats.effect.*
-import org.http4s.implicits.uri
 import org.http4s.Uri
+import org.http4s.implicits.uri
+
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 
 object constants {

@@ -3,8 +3,6 @@ package marketData.exchange.impl.binance.dto
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import _root_.io.scalaland.chimney
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
 import marketData.domain
 
 // https://binance-docs.github.io/apidocs/spot/en/#kline-candlestick-streams

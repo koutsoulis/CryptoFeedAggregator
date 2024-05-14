@@ -1,16 +1,13 @@
 package client
 
-import client.rateLimits.RLSemaphoreAndReleaseTime
 import _root_.io.circe
-import cats.effect.*
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
+import client.rateLimits.RLSemaphoreAndReleaseTime
 import org.http4s
-import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.dsl.*
-import org.http4s.implicits.*
 import org.http4s.Uri
+import org.http4s.circe.CirceEntityCodec.*
 
 trait RateLimitedHttpClient[F[_]: Async] {
   def get[Out: circe.Decoder](

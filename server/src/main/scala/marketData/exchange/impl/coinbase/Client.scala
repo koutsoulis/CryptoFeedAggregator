@@ -1,36 +1,26 @@
 package marketData.exchange.impl.coinbase
 
-import cats.effect.*
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import mouse.all.*
-import fs2.{Stream, Pull}
-import client.RateLimitedWSClient
-import client.RateLimitedHttpClient
-import marketData.names.TradePair
-import org.http4s.implicits.uri
-import org.http4s
-import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant
-import marketData.exchange.impl.coinbase.dto
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
-import marketData.domain.Orderbook
-import client.rateLimits.RLSemaphoreAndReleaseTime
-import cats.effect.std.Semaphore
-import org.typelevel.log4cats.Logger
-import marketData.exchange.impl.coinbase.dto.SubscribeRequest
-import marketData.names.FeedName
 import _root_.io.circe
-import marketData.exchange.impl.coinbase.dto.Level2Message.Relevant.Event.Update.Side
-import monocle.syntax.all.*
+import cats.*
+import cats.effect.*
+import cats.effect.std.Semaphore
+import cats.syntax.all.*
+import client.RateLimitedHttpClient
 import client.RateLimitedHttpClient.RateLimitedHttpClientLive
-import marketData.exchange.impl.coinbase.dto.ListProducts
-import marketData.names.Currency
+import client.RateLimitedWSClient
+import client.rateLimits.RLSemaphoreAndReleaseTime
+import fs2.Stream
 import marketData.exchange.impl.coinbase.dto.CandlesMessage
-import marketData.names.FeedName.Candlesticks
 import marketData.exchange.impl.coinbase.dto.Level2Message
+import marketData.exchange.impl.coinbase.dto.ListProducts
+import marketData.exchange.impl.coinbase.dto.SubscribeRequest
+import marketData.names.Currency
+import marketData.names.FeedName
+import marketData.names.FeedName.Candlesticks
 import marketData.names.FeedName.OrderbookFeed
+import marketData.names.TradePair
+import org.http4s
+import org.typelevel.log4cats.Logger
 
 trait Client[F[_]: Async] {
   def level2Messages(feedName: FeedName.OrderbookFeed): fs2.Stream[F, dto.Level2Message]

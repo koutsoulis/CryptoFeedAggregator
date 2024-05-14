@@ -1,23 +1,20 @@
 package client
 
-import weaver.SimpleIOSuite
-import cats.effect.*
 import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import org.http4s
-import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.dsl.*
-import org.http4s.implicits.*
-import scala.concurrent.duration.*
-import java.time.Instant
-import scala.concurrent.duration.FiniteDuration
+import cats.effect.*
 import cats.effect.std.Semaphore
-import client.rateLimits.RLSemaphoreAndReleaseTime
-import org.http4s.MalformedMessageBodyFailure
 import cats.effect.testkit.TestControl
-import client.testUtils.*
+import cats.syntax.all.*
 import client.RateLimitedHttpClient.RateLimitedHttpClientLive
+import client.rateLimits.RLSemaphoreAndReleaseTime
+import client.testUtils.*
+import org.http4s
+import org.http4s.MalformedMessageBodyFailure
+import org.http4s.implicits.*
+import weaver.SimpleIOSuite
+
+import scala.concurrent.duration.*
+import scala.concurrent.duration.FiniteDuration
 
 object RateLimitedHttpClientSpec extends SimpleIOSuite {
 

@@ -162,7 +162,7 @@ lazy val server = (project in file("server"))
     semanticdbEnabled := true,
     autoAPIMappings := true,
     Compile / tpolecatExcludeOptions ++= Set(
-      ScalacOptions.warnUnusedImports,
+      // ScalacOptions.warnUnusedImports,
       ScalacOptions.warnUnusedPrivates,
       ScalacOptions.warnUnusedParams,
       ScalacOptions.warnUnusedLocals,

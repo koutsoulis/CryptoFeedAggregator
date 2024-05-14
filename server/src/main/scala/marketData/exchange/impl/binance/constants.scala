@@ -1,13 +1,12 @@
 package marketData.exchange.impl.binance
 
-import scala.concurrent.duration.DurationInt
-import marketData.names.TradePair
-import cats.effect.*
-import org.http4s.implicits.uri
-import org.http4s.Uri
-import scala.concurrent.duration.FiniteDuration
 import marketData.names.Currency
+import marketData.names.TradePair
+import org.http4s.Uri
+import org.http4s.implicits.uri
+
 import java.util.Locale
+import scala.concurrent.duration.DurationInt
 
 // last checked 6 May 2024
 object constants {

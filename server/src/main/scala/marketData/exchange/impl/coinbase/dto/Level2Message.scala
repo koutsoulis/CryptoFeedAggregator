@@ -3,17 +3,12 @@ package marketData.exchange.impl.coinbase.dto
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
 import cats.*
-import cats.data.*
 import cats.syntax.all.*
-import mouse.all.*
-import _root_.io.scalaland.chimney
-import _root_.io.scalaland.chimney.syntax.*
-import _root_.io.scalaland.chimney.cats.*
 import marketData.domain.Orderbook
-import monocle.syntax.all.*
-import scala.util.Try
-import io.scalaland.chimney.partial.Result
+import mouse.all.*
+
 import scala.collection.immutable.TreeMap
+import scala.util.Try
 
 // https://docs.cloud.coinbase.com/advanced-trade/docs/ws-channels#level2-channel
 

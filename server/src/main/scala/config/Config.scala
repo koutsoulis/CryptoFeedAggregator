@@ -1,12 +1,10 @@
 package config
 
 import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import mouse.all.*
 import cats.effect.*
+import cats.syntax.all.*
+
 import scala.util.Try
-import java.nio.file.Path
 
 trait Config {
   def env: Config.ENV

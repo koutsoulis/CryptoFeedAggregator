@@ -1,21 +1,17 @@
 package client
 
-import client.rateLimits.RLSemaphoreAndReleaseTime
 import _root_.io.circe
-import cats.effect.*
+import _root_.io.circe.Json
 import cats.*
-import cats.data.*
+import cats.effect.*
 import cats.syntax.all.*
+import client.rateLimits.RLSemaphoreAndReleaseTime
+import fs2.Stream
 import org.http4s
+import org.http4s.Uri
 import org.http4s.client.websocket
 import org.http4s.client.websocket.WSRequest
-import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.dsl.*
-import org.http4s.implicits.*
-import org.http4s.Uri
-import fs2.Stream
 import org.typelevel.log4cats.Logger
-import _root_.io.circe.Json
 
 trait RateLimitedWSClient[F[_]: Async] {
   def wsConnect[Out: circe.Decoder](uri: Uri, subscriptionMessages: Seq[Json] = Seq.empty): Stream[F, Out]

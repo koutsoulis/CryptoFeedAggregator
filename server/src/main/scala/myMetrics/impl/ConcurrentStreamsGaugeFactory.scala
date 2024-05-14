@@ -1,16 +1,14 @@
 package myMetrics.impl
 
+import cats.*
+import cats.effect.*
+import cats.syntax.all.*
+import marketData.names.FeedName
+import names.ExchangeName
+import prometheus4cats.*
 import prometheus4cats.Gauge.Name
 import prometheus4cats.Metric.Help
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import mouse.all.*
 import prometheus4cats.MetricFactory
-import cats.effect.*
-import prometheus4cats.*
-import names.ExchangeName
-import marketData.names.FeedName
 
 class ConcurrentStreamsGaugeFactory[F[_]] {
   def make(

@@ -1,23 +1,21 @@
 package marketData
 
-import weaver.IOSuite
-import cats.effect.*
-import cats.*
-import cats.data.*
-import cats.syntax.all.*
-import fs2.Stream
-import marketData.names.FeedName.OrderbookFeed
-import marketData.exchange.Exchange
-import marketData.names.TradePair
-import marketData.names.Currency
-import names.FeedName
-import marketData.names.FeedName.Candlesticks
 import _root_.io.circe
 import _root_.io.circe.generic.semiauto.*
+import cats.*
+import cats.effect.*
+import fs2.Stream
 import marketData.domain.Candlestick
-import _root_.names.ExchangeName
+import marketData.exchange.Exchange
+import marketData.names.Currency
+import marketData.names.FeedName.Candlesticks
+import marketData.names.FeedName.OrderbookFeed
+import marketData.names.TradePair
 import myMetrics.MyMetrics
 import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
+import weaver.IOSuite
+
+import names.FeedName
 
 object MarketDataServiceSpec extends IOSuite {
 
