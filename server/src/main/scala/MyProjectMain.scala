@@ -28,7 +28,7 @@ object MyProjectMain extends IOApp.Simple {
           .traverse { exchange =>
             marketData
               .MarketDataService.apply[IO](exchange, incomingConcurrentStreamsGauge).map(exchange.name -> _)
-          }.toResource.map(_.toMap)
+          }.map(_.toMap)
 
       server <- Server[IO](
         servingRoutes = ServingRoutes(marketDataServiceByExchange, outgoingConcurrentStreamsGauge),

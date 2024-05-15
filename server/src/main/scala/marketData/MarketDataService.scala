@@ -12,6 +12,7 @@ import marketData.names.Currency
 import marketData.names.TradePair
 import myMetrics.MyMetrics
 import myMetrics.MyMetrics.IncomingConcurrentStreamsGauge
+import scala.concurrent.duration.DurationInt
 
 import scala.collection.concurrent.TrieMap
 
@@ -26,16 +27,11 @@ object MarketDataService {
 
   /**
    * Responsible for managing the lifecycle of the backing feeds. Avoids over-provisioning when multiple users request the same feed.
-   *
-   * @param exchangeSpecific
-   *   provides the backing feed from the Exchange
-   * @param F
-   * @return
    */
   def apply[F[_]](
       exchange: Exchange[F],
       incomingConcurrentStreamsGauge: IncomingConcurrentStreamsGauge[F]
-  )(using F: Async[F]): F[MarketDataService[F]] = {
+  )(using F: Async[F]): Resource[F, MarketDataService[F]] = {
 
     /**
      * Triple containing what we need to share a data feed among multiple subscribers.
@@ -71,10 +67,15 @@ object MarketDataService {
           )
       }.map(MapRef.fromScalaConcurrentMap)
 
-    (locks, initSFCs).mapN {
+    val activeCurrencyPairsSignalRes: Resource[F, Signal[F, List[TradePair]]] = // caches and refreshes every 2 minutes
+      Stream
+        .repeatEval[F, List[TradePair]](exchange.activeCurrencyPairs).meteredStartImmediately(2.minutes).hold1.compile.resource.onlyOrError
+
+    (Resource.eval(locks), Resource.eval(initSFCs), activeCurrencyPairsSignalRes).mapN {
       case (
             locks,
-            sfcMap
+            sfcMap,
+            activeCurrencyPairsSignal
           ) =>
         def sfc[M](feedDef: FeedName[M]): F[Ref[F, Option[SignalFinalizerCount[M]]]] = {
           F.fromOption(sfcMap.get(feedDef).map(_.asInstanceOf[Ref[F, Option[SignalFinalizerCount[M]]]]), new Exception(""))
@@ -130,7 +131,7 @@ object MarketDataService {
                 ).flatten
           }
 
-          override def activeCurrencyPairs: F[List[TradePair]] = exchange.activeCurrencyPairs
+          override def activeCurrencyPairs: F[List[TradePair]] = activeCurrencyPairsSignal.get
 
           private def backingStreamWrappedInPrometheusMetric(feed: FeedName[?]): Stream[F, feed.Message] = Stream.bracket(
             incomingConcurrentStreamsGauge.value.inc(exchange.name -> feed)

@@ -39,26 +39,32 @@ object MarketDataServiceSpec extends IOSuite {
   }
 
   test("reuses the backing stream when two requests overlap") { incomingConcurrentStreamsGauge =>
-    for {
-      (exchange, callCount) <- exchangeAndCallCount
-      marketDataService <- MarketDataService.apply(exchange, incomingConcurrentStreamsGauge)
-      arbitraryPair <- exchange.activeCurrencyPairs.map(_.head)
-      requestStubDatafeed = marketDataService.stream(Candlesticks(arbitraryPair))
-      _ <- requestStubDatafeed.zip(requestStubDatafeed).take(10).compile.drain
-      callCountV <- callCount.get
-    } yield expect(callCountV == 1)
+    exchangeAndCallCount
+      .toResource.flatMap { case (exchange, callCount) =>
+        MarketDataService.apply(exchange, incomingConcurrentStreamsGauge).map(_ -> callCount)
+      }.use { case (marketDataService, callCount) =>
+        for {
+          arbitraryPair <- marketDataService.activeCurrencyPairs.map(_.head)
+          requestStubDatafeed = marketDataService.stream(Candlesticks(arbitraryPair))
+          _ <- requestStubDatafeed.zip(requestStubDatafeed).take(10).compile.drain
+          callCountV <- callCount.get
+        } yield expect(callCountV == 1)
+      }
   }
 
   test("concludes streaming of a FeedName and reliably streams anew") { incomingConcurrentStreamsGauge =>
-    for {
-      (exchange, callCount) <- exchangeAndCallCount
-      marketDataService <- MarketDataService.apply(exchange, incomingConcurrentStreamsGauge)
-      arbitraryPair <- exchange.activeCurrencyPairs.map(_.head)
-      requestStubDatafeed = marketDataService.stream(Candlesticks(arbitraryPair))
-      _ <- requestStubDatafeed.take(10).compile.drain
-      outputSecondTime <- requestStubDatafeed.take(10).compile.toList
-      callCountV <- callCount.get
-    } yield expect(callCountV == 2) && expect(outputSecondTime.size == 10)
+    exchangeAndCallCount
+      .toResource.flatMap { case (exchange, callCount) =>
+        MarketDataService.apply(exchange, incomingConcurrentStreamsGauge).map(_ -> callCount)
+      }.use { case (marketDataService, callCount) =>
+        for {
+          arbitraryPair <- marketDataService.activeCurrencyPairs.map(_.head)
+          requestStubDatafeed = marketDataService.stream(Candlesticks(arbitraryPair))
+          _ <- requestStubDatafeed.take(10).compile.drain
+          outputSecondTime <- requestStubDatafeed.take(10).compile.toList
+          callCountV <- callCount.get
+        } yield expect(callCountV == 2) && expect(outputSecondTime.size == 10)
+      }
   }
 
   test("preserves error thrown by the Exchange service") { incomingConcurrentStreamsGauge =>
@@ -68,7 +74,7 @@ object MarketDataServiceSpec extends IOSuite {
       .apply(
         exchange = Exchange.stub(streamStub = _ => Stream.raiseError(errorFromExchangeService)),
         incomingConcurrentStreamsGauge = incomingConcurrentStreamsGauge
-      ).flatMap(
+      ).use(
         _.stream(FeedName.Candlesticks(TradePair(Currency("BTC"), Currency("ETH"))))
           .compile.drain.attempt
       ).map { outcome =>

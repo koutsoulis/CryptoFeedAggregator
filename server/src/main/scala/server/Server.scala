@@ -10,15 +10,13 @@ import fs2.io.net.Network
 import myMetrics.MyMetrics
 import org.http4s
 import org.http4s.HttpApp
+import org.http4s.HttpRoutes
+import org.http4s.Response
+import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import org.http4s.server.middleware.CORS
 import org.typelevel.log4cats.Logger
 import servingRoutes.ServingRoutes
-import org.http4s.Uri
-import org.http4s.HttpRoutes
-import org.http4s.Response
-import org.http4s.dsl.io.*
-import org.http4s.headers.Origin
 
 trait Server
 
@@ -45,9 +43,11 @@ object Server {
             .combineK(healthRoute)
             .combineK(
               CORS
-                .policy.withAllowOriginHost(
-                  Set(Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None))
-                ).httpRoutes(servingRoutes.httpRoutes))
+                .policy.withAllowOriginAll
+                // .withAllowOriginHost(
+                //   Set(Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None))
+                // )
+                .httpRoutes(servingRoutes.httpRoutes))
             .orNotFound.run
         }
       }.build
