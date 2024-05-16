@@ -17,6 +17,8 @@ import org.http4s.implicits.*
 import org.http4s.server.middleware.CORS
 import org.typelevel.log4cats.Logger
 import servingRoutes.ServingRoutes
+import org.http4s.headers.Origin
+import org.http4s.Uri
 
 trait Server
 
@@ -43,10 +45,11 @@ object Server {
             .combineK(healthRoute)
             .combineK(
               CORS
-                .policy.withAllowOriginAll
-                // .withAllowOriginHost(
-                //   Set(Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None))
-                // )
+                .policy
+                // .withAllowOriginAll
+                .withAllowOriginHost(
+                  Set(Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None))
+                )
                 .httpRoutes(servingRoutes.httpRoutes))
             .orNotFound.run
         }

@@ -25,6 +25,9 @@ import marketData.names.Currency
 import marketData.domain.Candlestick
 
 sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
+  // in retrospect I (maybe) should have used scala 3 Match Types to associate FeedName subtypes with their Message type
+  // https://docs.scala-lang.org/scala3/reference/new-types/match-types.html
+  // I was indecisive on how many scala 3 features to use
   type Message = M
 
   def nameWithoutParametersForPrometheusLabelValue: String = this.getClass().getSimpleName()
