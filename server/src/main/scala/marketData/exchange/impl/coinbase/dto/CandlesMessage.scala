@@ -26,7 +26,7 @@ object CandlesMessage {
 
     object Event {
       case class Candle(
-          start: String,
+          start: String, // in seconds
           high: BigDecimal,
           low: BigDecimal,
           open: BigDecimal,
@@ -36,7 +36,7 @@ object CandlesMessage {
       object Candle {
         given chimney.Transformer[Candle, Candlestick] = chimney
           .Transformer.define[Candle, Candlestick]
-          .withFieldRenamed(_.start, _.startTimeInMsSinceUnixEpoch)
+          .withFieldComputed(_.startTimeInMsSinceUnixEpoch, _.start.toLong.*(1000).toString)
           .buildTransformer
       }
     }
