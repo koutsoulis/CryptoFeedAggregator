@@ -2,15 +2,15 @@ This project consists of the server subproject under the `./server` directory wh
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/)
 
-I initially followed along the [Typelevel rite of passage course by Daniel Ciocirlan](https://rockthejvm.com/p/typelevel-rite-of-passage) which I heartily recommend.
+I initially followed along the [Typelevel rite of passage course by Daniel Ciocirlan](https://rockthejvm.com/p/typelevel-rite-of-passage) which I heartily recommend. The build file and the demo app contain code from the course.
 
 ### Short breakdown of the server subproject. What does each component do?
 MarketDataService contains the bulk of the business logic. Exchange plays the role of the "Repository". The ServingRoutes component contains the routing logic of the server, while the Server component wraps around it and adds management routes and middleware.
 
-Note that at runtime the Server holds multiple instances of the MarketDataService and Exchange components. The reason becomes clear as you read on.
+Maybe MarketDataService and Exchange should not be characterized as components since the Server holds multiple instances of both at runtime.
 
 ### ServingRoutes component short description
-The ServingRoutes component holds two MarketDataService instances, one for Coinbase and one for Binance and routes requests for streaming of market data feeds to the corresponding MarketDataService. The routes it serves are tailored to the demo app which communicates which market feed, trade pair and Exchange to stream from by serializing a description thereof and embedding it as a query parameter which the MarketDataService in turn deserializes.
+The ServingRoutes component holds two MarketDataService instances, one for Coinbase and one for Binance and routes requests for streaming of market data feeds to the corresponding MarketDataService. The routes it serves are tailored to the demo app which communicates which market feed, trade pair and Exchange to stream from by serializing a description thereof and embedding it as a query parameter which the MarketDataService in turn deserializes. Convenient but not a good practice.
 
 ### MarketDataService breakdown
 #### Initialization
