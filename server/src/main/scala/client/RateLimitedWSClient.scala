@@ -32,9 +32,6 @@ object RateLimitedWSClient {
      * to express, reason about and correct enough) if the countdown started right before emitting the request to establish the connection ,
      * by also incrementing the time to countdown by say ~2secs to account for possible high latencies. And if the 2 secs are not enough and
      * we hit the rate limits not bother recover.
-     *
-     * @param uri
-     * @return
      */
     override def wsConnect[Out: circe.Decoder](uri: Uri, subscriptionMessages: Seq[Json]): Stream[F, Out] = {
       val establishWSConnection = F.bracketFull { poll =>

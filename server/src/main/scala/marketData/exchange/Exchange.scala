@@ -12,10 +12,23 @@ import marketData.names.TradePair
 import names.ExchangeName
 
 trait Exchange[F[_]: Async] {
+
+  /**
+   * @return
+   *   All the trade pairs (active or not) the target cryptocurrency exchange is aware of at the time of the server's instantiation
+   */
   def allCurrencyPairs: List[TradePair]
 
+  /**
+   * @return
+   *   The trade pairs actively traded on the exchange (not paused) at the time this is executed
+   */
   def activeCurrencyPairs: F[List[TradePair]]
 
+  /**
+   * @return
+   *   All combinations of (tradePair x FeedName) the Exchange can make sense of
+   */
   def allFeedNames: List[FeedName[?]] = {
     val allLevel2Names: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
     val allCandlestickNames: List[FeedName.Candlesticks] = allCurrencyPairs.map(FeedName.Candlesticks.apply)

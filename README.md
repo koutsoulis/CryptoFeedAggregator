@@ -5,7 +5,19 @@ I came up with this project to give myself an opportunity to explore the [Typele
 I initially followed along the [Typelevel rite of passage course by Daniel Ciocirlan](https://rockthejvm.com/p/typelevel-rite-of-passage) which I heartily recommend. The build file and the demo app contain code from the course.
 
 ### Short breakdown of the server subproject. What does each component do?
-MarketDataService contains the bulk of the business logic. Exchange plays the role of the "Repository". The ServingRoutes component contains the routing logic of the server, while the Server component wraps around it and adds management routes and middleware.
+```mermaid
+flowchart LR
+    Server-->ServingRoutes-->MarketDataService
+    subgraph One copy for each crypto exchange
+    MarketDataService-->Exchange
+    Exchange-->RateLimitedHttpClient
+    Exchange-->RateLimitedWSClient
+    end
+```
+- The MarketDataService contains the bulk of the business logic. 
+- The Exchange plays the role of the "Repository" for a given crypto exchange. 
+- The ServingRoutes component contains the routing logic of the server.
+- The Server component wraps around ServingRoutes and adds management routes and middleware.
 
 Maybe MarketDataService and Exchange should not be characterized as components since the Server holds multiple instances of both at runtime.
 
@@ -63,7 +75,7 @@ Some directories are named "dto" or "domain". These are to disambiguate between 
 Directories named "names" declare entities meant to be used as keys in maps, which means equality checking on them should be structural.
 
 ### Disagreeable choices I made
-Could not decide when to use Scala 3 features over equivalent scala 2 ones. Often because I was (likely irrationally) worried about IDE/ language server maturity.
+Could not decide when to use Scala 3 features over scala 2 ones they supersede. Often because I was (likely irrationally) worried about IDE/ language server maturity.
 
 The app subproject is just a demo of how to interact with the server. It’s not an ideal use case due to the way rate limits are enforced by cryptocurrency exchanges such as Binance and Coinbase. These limits are allocated based on the IP addresses of the consumers. Given that these exchanges are relatively generous with their rate limits, there’s no necessity for a server to act as an intermediary that broadcasts data to multiple instances of the demo app. Also, don't look at the demo app's code, I did not do a good job there.
 
