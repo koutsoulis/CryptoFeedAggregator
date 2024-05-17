@@ -5,6 +5,7 @@ I came up with this project to give myself an opportunity to explore the [Typele
 I initially followed along the [Typelevel rite of passage course by Daniel Ciocirlan](https://rockthejvm.com/p/typelevel-rite-of-passage) which I heartily recommend. The build file and the demo app contain code from the course.
 
 ### Short breakdown of the server subproject. What does each component do?
+Arrows moving upstream
 ```mermaid
 flowchart LR
     Server-->ServingRoutes-->MarketDataService
