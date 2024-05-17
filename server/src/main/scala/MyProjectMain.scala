@@ -13,11 +13,13 @@ import org.http4s.jdkhttpclient.JdkWSClient
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import servingRoutes.ServingRoutes
+import config.Config
 
 object MyProjectMain extends IOApp.Simple {
   override def run: IO[Unit] = {
     val serverResource: Resource[IO, Server] = for {
       given Logger[IO] <- Slf4jFactory.create[IO].create.toResource
+      config <- Config.load[IO].toResource
       httpClient <- EmberClientBuilder.default[IO].build.map(middleware.Logger.apply[IO](false, false))
       wsClient <- JdkWSClient.simple[IO].toResource
       binance <- marketData.exchange.impl.Binance.apply[IO](httpClient, wsClient).toResource
@@ -32,7 +34,8 @@ object MyProjectMain extends IOApp.Simple {
 
       server <- Server[IO](
         servingRoutes = ServingRoutes(marketDataServiceByExchange, outgoingConcurrentStreamsGauge),
-        metricsExporter = metricsExporter
+        metricsExporter = metricsExporter,
+        config = config
       )
     } yield server
 

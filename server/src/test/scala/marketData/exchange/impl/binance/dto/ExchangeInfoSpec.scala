@@ -7,7 +7,7 @@ import weaver.SimpleIOSuite
 
 object ExchangeInfoSpec extends SimpleIOSuite {
   test("deserializes ExchangeInfo") {
-    IO.delay {
+    IO.blocking {
       circe.parser.decode[ExchangeInfo](os.read(os.resource / "binance-exchange-info.json"))
     }.map { result => expect(result.isRight) }
   }

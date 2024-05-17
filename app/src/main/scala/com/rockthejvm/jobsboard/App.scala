@@ -75,9 +75,9 @@ class App extends TyrianIOApp[Msg, Model] {
     def allPairs(exchange: ExchangeName): IO[Map[Currency, Set[Currency]]] = {
       val allPairsReq = Request[IO](uri = http4s
         .Uri.fromString(
-          // s"https://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}/activeCurrencyPairs"
-          s"http://localhost:4041/${exchange.toString}/activeCurrencyPairs"
-        ) // https for prod
+          s"https://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}/activeCurrencyPairs"
+          // s"http://localhost:4041/${exchange.toString}/activeCurrencyPairs"
+        )
         .getOrElse(None.get))
 
       client

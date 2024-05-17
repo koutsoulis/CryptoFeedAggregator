@@ -1,31 +1,26 @@
 package config
 
+import _root_.io.circe
+import _root_.io.circe.generic.semiauto.*
 import cats.*
 import cats.effect.*
 import cats.syntax.all.*
+import com.comcast.ip4s.Host
+import com.comcast.ip4s.Port
 
-import scala.util.Try
+case class Config private (
+    host: Host,
+    port: Port
+) derives circe.Decoder
 
-trait Config {
-  def env: Config.ENV
-}
+private given circe.Decoder[Host] = circe.Decoder[String].emap(Host.fromString.map(_.toRight(left = "could not decode Host")))
+private given circe.Decoder[Port] = circe.Decoder[Int].emap(Port.fromInt.map(_.toRight(left = "could not decode Port")))
 
 object Config {
-  class ConfigLive(override val env: Config.ENV) extends Config
-
-  enum ENV {
-    case development, production
-  }
-  object ENV {
-    given ciris.ConfigDecoder[String, ENV] = ciris.ConfigDecoder[String].mapOption("ENV") { string =>
-      Try(ENV.valueOf(string)).toOption
-    }
-  }
-
-  def apply[F[_]: Async](): F[Config] = {
-    ciris
-      .env("ENV").as[ENV].map { env =>
-        new ConfigLive(env)
-      }.load
+  def load[F[_]: Async]: F[Config] = {
+    Async[F]
+      .blocking(
+        os.read(os.resource / "configuration.json")
+      ).map(circe.parser.decode).rethrow
   }
 }
