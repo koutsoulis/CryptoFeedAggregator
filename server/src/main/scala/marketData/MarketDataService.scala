@@ -71,6 +71,8 @@ object MarketDataService {
       Stream
         .repeatEval[F, List[TradePair]](exchange.activeCurrencyPairs).meteredStartImmediately(2.minutes).hold1.compile.resource.onlyOrError
 
+    val allCurrencyPairsAsSet = exchange.allCurrencyPairs.toSet
+
     (Resource.eval(locks), Resource.eval(initSFCs), activeCurrencyPairsSignalRes).mapN {
       case (
             locks,
@@ -131,7 +133,10 @@ object MarketDataService {
                 ).flatten
           }
 
-          override def activeCurrencyPairs: F[List[TradePair]] = activeCurrencyPairsSignal.get
+          override def activeCurrencyPairs: F[List[TradePair]] =
+            activeCurrencyPairsSignal
+              .get
+              .map(_.filter(allCurrencyPairsAsSet.contains)) // drop any tradepairs listed on the exchange after the server's initialization
 
           private def backingStreamWrappedInPrometheusMetric(feed: FeedName[?]): Stream[F, feed.Message] = Stream.bracket(
             incomingConcurrentStreamsGauge.value.inc(exchange.name -> feed)
