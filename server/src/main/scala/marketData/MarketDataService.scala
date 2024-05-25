@@ -18,7 +18,7 @@ import scala.collection.concurrent.TrieMap
 
 import names.FeedName
 
-trait MarketDataService[F[_]] {
+trait MarketDataService[F[_]: Async] {
   def stream(feedName: FeedName[?]): Stream[F, feedName.Message]
   def activeCurrencyPairs: F[List[TradePair]]
 }

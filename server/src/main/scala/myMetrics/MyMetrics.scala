@@ -17,15 +17,15 @@ import prometheus4cats.javasimpleclient.JavaMetricRegistry
 
 object MyMetrics {
 
-  trait Exporter[F[_]] {
+  trait Exporter[F[_]: Sync] {
     def metricsRoute: HttpRoutes[F]
   }
 
-  trait OutgoingConcurrentStreamsGauge[F[_]] {
+  trait OutgoingConcurrentStreamsGauge[F[_]: Async] {
     def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
   }
 
-  trait IncomingConcurrentStreamsGauge[F[_]] {
+  trait IncomingConcurrentStreamsGauge[F[_]: Async] {
     def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
   }
 

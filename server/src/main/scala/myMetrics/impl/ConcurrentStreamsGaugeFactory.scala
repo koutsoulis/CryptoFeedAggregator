@@ -10,7 +10,7 @@ import prometheus4cats.Gauge.Name
 import prometheus4cats.Metric.Help
 import prometheus4cats.MetricFactory
 
-class ConcurrentStreamsGaugeFactory[F[_]] {
+class ConcurrentStreamsGaugeFactory[F[_]: Async] {
   def make(
       metricsFactory: MetricFactory[F],
       name: Name,
