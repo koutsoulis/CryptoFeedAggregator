@@ -135,7 +135,7 @@ lazy val server = (project in file("server"))
       ScalacOptions.fatalWarnings
     ),
     dockerExposedPorts ++= Seq(4041),
-    dockerBaseImage := "sbtscala/scala-sbt:eclipse-temurin-jammy-17.0.10_7_1.10.0_3.4.1",
+    dockerBaseImage := "amazoncorretto:17-al2023-headless",
     Docker / daemonUserUid := None,
     Docker / daemonUser := "daemon",
     Docker / dockerRepository := Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),
@@ -146,11 +146,11 @@ lazy val server = (project in file("server"))
         name = "typelevel-project-backend",
         tag = Some("anotherversion")
       ),
-    Docker / dockerUpdateLatest.withRank(KeyRanks.Invisible) := true,
+    Docker / dockerUpdateLatest.withRank(KeyRanks.Invisible) := true
     // development environment variables
-    reStart / envVars := Map(
-      "ENV" -> "development"
-    )
+    // reStart / envVars := Map(
+    //   "ENV" -> "development"
+    // )
     // reStart / javaOptions += "-Dcats.effect.tracing.buffer.size=128"
   ).dependsOn(common.jvm)
 
