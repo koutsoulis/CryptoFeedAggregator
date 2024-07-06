@@ -93,7 +93,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb-reachable-from-public-https"
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb-reach-typelevel-server" {
-  security_group_id = aws_security_group.alb_sg.id
+  security_group_id            = aws_security_group.alb_sg.id
   referenced_security_group_id = aws_security_group.security_group.id
 
   from_port   = 4041
@@ -102,7 +102,7 @@ resource "aws_vpc_security_group_egress_rule" "alb-reach-typelevel-server" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb-reach-grafana" {
-  security_group_id = aws_security_group.alb_sg.id
+  security_group_id            = aws_security_group.alb_sg.id
   referenced_security_group_id = aws_security_group.security_group.id
 
   from_port   = 3000

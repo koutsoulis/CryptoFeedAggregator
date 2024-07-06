@@ -55,24 +55,24 @@ resource "aws_launch_template" "example" {
   instance_type = "t3.micro"
   network_interfaces {
     associate_public_ip_address = true
-    security_groups = [aws_security_group.security_group.id]
+    security_groups             = [aws_security_group.security_group.id]
   }
   key_name = aws_key_pair.deployer.key_name
 
- iam_instance_profile {
-   name = "ecsInstanceRole"
- }
+  iam_instance_profile {
+    name = "ecsInstanceRole"
+  }
 
   user_data = filebase64("${path.module}/ecs.sh")
 }
 
 resource "aws_autoscaling_group" "my_asg" {
   launch_template {
-    id = aws_launch_template.example.id
+    id      = aws_launch_template.example.id
     version = "$Latest"
   }
-  min_size             = 1
-  max_size             = 2
+  min_size            = 1
+  max_size            = 2
   vpc_zone_identifier = [aws_subnet.public_subnet.id]
 
   instance_refresh {
@@ -86,19 +86,19 @@ resource "aws_autoscaling_group" "my_asg" {
   }
 
   tag {
-   key                 = "AmazonECSManaged"
-   value               = true
-   propagate_at_launch = true
- }
+    key                 = "AmazonECSManaged"
+    value               = true
+    propagate_at_launch = true
+  }
 
- target_group_arns = [aws_lb_target_group.example.arn, aws_lb_target_group.backend.arn]
+  target_group_arns = [aws_lb_target_group.example.arn, aws_lb_target_group.backend.arn]
 }
 
 resource "aws_ecs_capacity_provider" "my_ec2_provider" {
   name = "myEC2CapacityProvider"
 
   auto_scaling_group_provider {
-    auto_scaling_group_arn         = aws_autoscaling_group.my_asg.arn
+    auto_scaling_group_arn = aws_autoscaling_group.my_asg.arn
     # managed_termination_protection = "ENABLED"
   }
 }
@@ -116,13 +116,13 @@ resource "aws_ecs_cluster_capacity_providers" "example" {
 }
 
 resource "aws_vpc" "my_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
 }
 
 resource "aws_security_group" "security_group" {
- name   = "ecs-security-group"
- vpc_id = aws_vpc.my_vpc.id
+  name   = "ecs-security-group"
+  vpc_id = aws_vpc.my_vpc.id
 }
 
 # ecs agent can reach ECS service endpoint and register EC2 instance to my ECS cluster
@@ -148,9 +148,9 @@ resource "aws_vpc_security_group_ingress_rule" "typelevel_server" {
   security_group_id = aws_security_group.security_group.id
 
   referenced_security_group_id = aws_security_group.alb_sg.id
-  from_port   = 4041
-  ip_protocol = "tcp"
-  to_port     = 4041
+  from_port                    = 4041
+  ip_protocol                  = "tcp"
+  to_port                      = 4041
 }
 
 resource "aws_vpc_security_group_ingress_rule" "typelevel_server_public" {
@@ -166,9 +166,9 @@ resource "aws_vpc_security_group_ingress_rule" "grafana" {
   security_group_id = aws_security_group.security_group.id
 
   referenced_security_group_id = aws_security_group.alb_sg.id
-  from_port   = 3000
-  ip_protocol = "tcp"
-  to_port     = 3000
+  from_port                    = 3000
+  ip_protocol                  = "tcp"
+  to_port                      = 3000
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh" {
@@ -178,13 +178,13 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
   from_port   = 22
   ip_protocol = "tcp"
   to_port     = 22
- }
+}
 
 resource "aws_subnet" "public_subnet" {
-  vpc_id            = aws_vpc.my_vpc.id
-  cidr_block        = "10.0.1.0/24"
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
-  availability_zone = "eu-north-1a"
+  availability_zone       = "eu-north-1a"
 
   tags = {
     Name = "PublicSubnet"
@@ -193,10 +193,10 @@ resource "aws_subnet" "public_subnet" {
 
 # forced on us by the application load balancer (requires minimum 2 subnets)
 resource "aws_subnet" "public_subne2" {
-  vpc_id            = aws_vpc.my_vpc.id
-  cidr_block        = "10.0.3.0/24"
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = "10.0.3.0/24"
   map_public_ip_on_launch = true
-  availability_zone = "eu-north-1b"
+  availability_zone       = "eu-north-1b"
 
   tags = {
     Name = "PublicSubnet2"
@@ -235,17 +235,18 @@ resource "aws_route_table_association" "public_subnet2_association" {
 }
 
 resource "aws_ecs_service" "server-grafana-prometheus" {
-  name            = "server-grafana-prometheus-name"
-  cluster         = aws_ecs_cluster.ecs-typelevel-project-cluster.id
-  task_definition = "arn:aws:ecs:eu-north-1:905418066033:task-definition/typelevel-backend:27"
+  name    = "server-grafana-prometheus-name"
+  cluster = aws_ecs_cluster.ecs-typelevel-project-cluster.id
+  # task_definition = "arn:aws:ecs:eu-north-1:905418066033:task-definition/typelevel-backend:27"
+  task_definition = aws_ecs_task_definition.backend_prometheus_grafana.arn
   desired_count   = 1
 
   force_new_deployment = true
-   placement_constraints {
-   type = "distinctInstance"
- }
+  placement_constraints {
+    type = "distinctInstance"
+  }
 
-   capacity_provider_strategy {
+  capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.my_ec2_provider.name
     weight            = 100
   }
@@ -254,41 +255,41 @@ resource "aws_ecs_service" "server-grafana-prometheus" {
 }
 
 resource "aws_lb_target_group" "example" {
-  name     = "example-tg"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id = aws_vpc.my_vpc.id
+  name        = "example-tg"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.my_vpc.id
   target_type = "instance"
-  
+
   health_check {
-    enabled = true
-    path    = "/"
-    protocol = "HTTP"
-    port    = 4041
+    enabled             = true
+    path                = "/"
+    protocol            = "HTTP"
+    port                = 4041
     healthy_threshold   = 3
     unhealthy_threshold = 3
-    timeout = 5
-    interval = 30
+    timeout             = 5
+    interval            = 30
     matcher             = "200"
   }
 }
 
 resource "aws_lb_target_group" "backend" {
-  name     = "backend-target-group"
-  port     = 4041
-  protocol = "HTTP"
-  vpc_id = aws_vpc.my_vpc.id
+  name        = "backend-target-group"
+  port        = 4041
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.my_vpc.id
   target_type = "instance"
-  
+
   health_check {
-    enabled = true
-    path    = "/"
-    protocol = "HTTP"
-    port    = 4041
+    enabled             = true
+    path                = "/"
+    protocol            = "HTTP"
+    port                = 4041
     healthy_threshold   = 3
     unhealthy_threshold = 3
-    timeout = 5
-    interval = 30
+    timeout             = 5
+    interval            = 30
     matcher             = "200"
   }
 }
