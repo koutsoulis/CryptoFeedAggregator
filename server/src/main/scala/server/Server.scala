@@ -46,7 +46,10 @@ object Server {
                 .policy
                 // .withAllowOriginAll
                 .withAllowOriginHost(
-                  Set(Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None))
+                  Set(
+                    Origin.Host(Uri.Scheme.https, Uri.RegName("app.kotopoulion.xyz"), None),
+                    Origin.Host(Uri.Scheme.https, Uri.RegName("poc-app.kotopoulion.xyz"), None)
+                  )
                 )
                 .httpRoutes(servingRoutes.httpRoutes))
             .orNotFound.run

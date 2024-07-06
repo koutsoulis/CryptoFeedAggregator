@@ -136,16 +136,11 @@ lazy val server = (project in file("server"))
     ),
     dockerExposedPorts ++= Seq(4041),
     dockerBaseImage := "amazoncorretto:17-al2023-headless",
+    Docker / packageName := "typelevel-project-backend-amd64",
     Docker / daemonUserUid := None,
     Docker / daemonUser := "daemon",
     Docker / dockerRepository := Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),
-    Docker / dockerAlias := com
-      .typesafe.sbt.packager.docker.DockerAlias(
-        registryHost = Some("905418066033.dkr.ecr.eu-north-1.amazonaws.com"),
-        username = None,
-        name = "typelevel-project-backend",
-        tag = Some("anotherversion")
-      ),
+    dockerBuildxPlatforms := Seq("linux/amd64"),
     Docker / dockerUpdateLatest.withRank(KeyRanks.Invisible) := true
     // development environment variables
     // reStart / envVars := Map(

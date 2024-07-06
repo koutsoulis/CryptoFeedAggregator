@@ -42,7 +42,7 @@ object StreamFromServer {
             websocket.WSRequest(
               uri = http4s
                 .Uri.fromString(
-                  s"wss://typelevel-project-backend.kotopoulion.xyz:4041/${exchange.toString}"
+                  s"wss://typelevel-server-new.kotopoulion.xyz/${exchange.toString}"
                   // s"ws://localhost:4041/${exchange.toString}"
                 )
                 .map(_.withQueryParam("feedName", feedName: FeedName[?]))

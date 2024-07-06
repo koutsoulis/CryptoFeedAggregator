@@ -1,4 +1,4 @@
-This project consists of the server subproject under the `./server` directory which is the primary subproject, a makeshift demo app for the server under the `./app` directory, a live instance of which can be found at <https://app.kotopoulion.xyz> and some cross compiled stuff under `./common`.
+This project consists of the server subproject under the `./server` directory which is the primary subproject, a makeshift demo app for the server under the `./app` directory, a live instance of which can be found at <https://poc-app.kotopoulion.xyz> and some cross compiled stuff under `./common`.
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/)
 
@@ -30,7 +30,7 @@ During initalization, the MarketDataService asks its corresponding Exchange (e.g
 In addition to this one-off request for the full list of trade pairs, the MarketDataService makes a request for the list of pairs that are being actively traded at the time of the request, caches the result and registers an action to periodically refresh it, so that this list is always relatively fresh. This list is exposed downstream so that users of the demo app see only the active trade pairs.
 
 #### Past initalization
-The MarketDataService distributes a data stream from an (cryptocurrency) Exchange to several subscribers at the same time when they all need access to it simultaneously. This can be observed in action by navigating to <https://app.kotopoulion.xyz> on two separate tabs, filling in an identical selection of market feed on both and navigating to <https://grafana.kotopoulion.xyz/d/xOxMn5ESk/number-of-concurrent-streams> on another tab. There should be one stream from Exchange to Server and two copies of the same stream from Server to Demo app.
+The MarketDataService distributes a data stream from an (cryptocurrency) Exchange to several subscribers at the same time when they all need access to it simultaneously. This can be observed in action by navigating to <https://poc-app.kotopoulion.xyz> on two separate tabs, filling in an identical selection of market feed on both and navigating to <https://grafana.kotopoulion.xyz/d/qWs5DLUIk/number-of-concurrent-streams> on another tab. There should be one stream from Exchange to Server and two copies of the same stream from Server to Demo app.
 ```mermaid
 sequenceDiagram
     actor User2
