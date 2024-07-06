@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s  # By default, scrape targets every 15 seconds.
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+    monitor: 'my-app-monitor'
+
+scrape_configs:
+  - job_name: 'my-application'
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+    
+    static_configs:
+      - targets: ['typelevel-backend:4041']
