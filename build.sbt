@@ -1,7 +1,9 @@
 ThisBuild / version := "0.1.1-SNAPSHOT"
 // ThisBuild / name := "typelevel-project"
 
-lazy val scala3Version = "3.4.1"
+lazy val scala3Version = "3.4.2"
+
+import org.typelevel.scalacoptions.ScalacOptions
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Common - contains domain model
@@ -20,7 +22,7 @@ lazy val common = (crossProject(JSPlatform, JVMPlatform) in file("common"))
   .settings(
     name := "common",
     scalaVersion := scala3Version,
-    scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
+    scalacOptions ++= Seq("-no-indent", "-Vprofile"),
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "org.http4s" %%% "http4s-client" % http4sVersion,
@@ -106,7 +108,7 @@ lazy val server = (project in file("server"))
   .settings(
     name := "typelevel-project-backend",
     scalaVersion := scala3Version,
-    scalacOptions ++= Seq("-source:future", "-no-indent", "-Vprofile"),
+    scalacOptions ++= Seq("-no-indent", "-Vprofile"),
     libraryDependencies ++= Seq(
       "org.http4s" %% "http4s-ember-server" % http4sVersion,
       "org.http4s" %% "http4s-ember-client" % http4sVersion,
