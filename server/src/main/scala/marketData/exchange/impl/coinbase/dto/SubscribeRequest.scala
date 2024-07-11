@@ -1,8 +1,6 @@
 package marketData.exchange.impl.coinbase.dto
 
 import _root_.io.circe
-import _root_.io.circe.generic.semiauto.*
-import marketData.names.TradePair
 import marketData.names.FeedName
 import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName.Candlesticks

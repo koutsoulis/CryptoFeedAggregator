@@ -125,12 +125,12 @@ object MarketDataService {
                 } yield ()
               }
 
-              Stream
-                .bracketFull(
-                  acquire = listenToAndPotentiallySetupBackingFeed
-                )(
-                  release = (_, _) => potentiallyShutdownBackingFeed
-                ).flatten
+            Stream
+              .bracketFull(
+                acquire = listenToAndPotentiallySetupBackingFeed
+              )(
+                release = (_, _) => potentiallyShutdownBackingFeed
+              ).flatten
           }
 
           override def activeCurrencyPairs: F[List[TradePair]] =

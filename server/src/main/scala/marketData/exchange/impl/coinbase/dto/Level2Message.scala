@@ -1,7 +1,6 @@
 package marketData.exchange.impl.coinbase.dto
 
 import _root_.io.circe
-import _root_.io.circe.generic.semiauto.*
 import cats.*
 import cats.syntax.all.*
 import marketData.domain.Orderbook

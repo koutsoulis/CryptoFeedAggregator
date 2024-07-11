@@ -42,7 +42,7 @@ trait Exchange[F[_]: Async] {
 }
 
 object Exchange {
-  def stub[F[_], M](using F: Async[F])(
+  def stub[F[_]](using F: Async[F])(
       allCurrencyPairsStub: List[TradePair] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))),
       activeCurrencyPairsStub: F[List[TradePair]] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))).pure[F],
       streamStub: (feedName: FeedName[?]) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },

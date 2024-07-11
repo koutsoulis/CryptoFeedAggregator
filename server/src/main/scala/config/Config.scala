@@ -1,7 +1,6 @@
 package config
 
 import _root_.io.circe
-import _root_.io.circe.generic.semiauto.*
 import cats.*
 import cats.effect.*
 import cats.syntax.all.*
