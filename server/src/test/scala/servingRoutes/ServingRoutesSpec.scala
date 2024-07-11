@@ -24,6 +24,7 @@ import org.http4s.client.websocket.WSRequest
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.noop.NoOpLogger
 import weaver.SimpleIOSuite
+import marketData.names.FeedName.FeedNameQ
 
 object ServingRoutesSpec extends SimpleIOSuite {
   val testFeedName = Candlesticks(TradePair(base = Currency("BTC"), quote = Currency("ETH")))
@@ -56,7 +57,7 @@ object ServingRoutesSpec extends SimpleIOSuite {
       conn <- servingRoutesUnderTest.connectHighLevel(
         request = WSRequest(uri = Uri
           .unsafeFromString(s"${ExchangeName.Coinbase.toString}")
-          .withQueryParam("feedName", testFeedName: FeedName[?]))
+          .withQueryParam("feedName", testFeedName: FeedNameQ))
       )
       _ <- conn.send(WSFrame.Text("")).toResource
       receivedFrame <- conn.receive.getOrRaiseMsg("").toResource

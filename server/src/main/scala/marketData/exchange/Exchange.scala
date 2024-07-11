@@ -10,6 +10,7 @@ import marketData.names.FeedName.Candlesticks
 import marketData.names.FeedName.OrderbookFeed
 import marketData.names.TradePair
 import names.ExchangeName
+import marketData.names.FeedName.FeedNameQ
 
 trait Exchange[F[_]: Async] {
 
@@ -29,7 +30,7 @@ trait Exchange[F[_]: Async] {
    * @return
    *   All combinations of (tradePair x FeedName) the Exchange can make sense of
    */
-  def allFeedNames: List[FeedName[?]] = {
+  def allFeedNames: List[FeedNameQ] = {
     val allLevel2Names: List[FeedName.OrderbookFeed] = allCurrencyPairs.map(FeedName.OrderbookFeed.apply)
     val allCandlestickNames: List[FeedName.Candlesticks] = allCurrencyPairs.map(FeedName.Candlesticks.apply)
 
@@ -45,7 +46,7 @@ object Exchange {
   def stub[F[_]](using F: Async[F])(
       allCurrencyPairsStub: List[TradePair] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))),
       activeCurrencyPairsStub: F[List[TradePair]] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))).pure[F],
-      streamStub: (feedName: FeedName[?]) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
+      streamStub: (feedName: FeedNameQ) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
       nameStub: ExchangeName = ExchangeName.Binance
   ): Exchange[F] = new Exchange {
 

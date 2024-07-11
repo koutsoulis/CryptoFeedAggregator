@@ -14,6 +14,7 @@ import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.noop.NoOpLogger
 import prometheus4cats.*
 import prometheus4cats.javasimpleclient.JavaMetricRegistry
+import marketData.names.FeedName.FeedNameQ
 
 object MyMetrics {
 
@@ -22,11 +23,11 @@ object MyMetrics {
   }
 
   trait OutgoingConcurrentStreamsGauge[F[_]: Async] {
-    def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
+    def value: Gauge[F, Long, (ExchangeName, FeedNameQ)]
   }
 
   trait IncomingConcurrentStreamsGauge[F[_]: Async] {
-    def value: Gauge[F, Long, (ExchangeName, FeedName[?])]
+    def value: Gauge[F, Long, (ExchangeName, FeedNameQ)]
   }
 
   private def applyImpl[F[_]: Async: Logger](stubMetricFactory: Option[MetricFactory[F]] = None)
@@ -64,12 +65,12 @@ object MyMetrics {
 
       val outgoingConcurrentStreamsGauge = new OutgoingConcurrentStreamsGauge[F] {
 
-        override val value: Gauge[F, Long, (ExchangeName, FeedName[?])] = outgoingConcurrentStreamsGaugeImpl
+        override val value: Gauge[F, Long, (ExchangeName, FeedNameQ)] = outgoingConcurrentStreamsGaugeImpl
 
       }
 
       val incomingConcurrentStreamsGauge = new IncomingConcurrentStreamsGauge[F] {
-        override val value: Gauge[F, Long, (ExchangeName, FeedName[?])] = incomingConcurrentStreamsGaugeImpl
+        override val value: Gauge[F, Long, (ExchangeName, FeedNameQ)] = incomingConcurrentStreamsGaugeImpl
       }
 
       (exporter, outgoingConcurrentStreamsGauge, incomingConcurrentStreamsGauge)

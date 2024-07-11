@@ -25,21 +25,20 @@ import marketData.names.Currency
 import marketData.domain.Candlestick
 
 sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
-  // in retrospect I (maybe) should have used scala 3 Match Types to associate FeedName subtypes with their Message type
-  // https://docs.scala-lang.org/scala3/reference/new-types/match-types.html
-  // I was indecisive on how many scala 3 features to use
   type Message = M
 
   def nameWithoutParametersForPrometheusLabelValue: String = this.getClass().getSimpleName()
 
   def parametersStringForPrometheusLabelValue: String
 
-  def borerEncoderForMessage: borer.Encoder[M] = summon[borer.Encoder[M]]
+  val borerEncoderForMessage: borer.Encoder[M] = summon[borer.Encoder[M]]
 
-  def borerDecoderForMessage: borer.Decoder[M] = summon[borer.Decoder[M]]
+  val borerDecoderForMessage: borer.Decoder[M] = summon[borer.Decoder[M]]
 }
 
 object FeedName {
+  type FeedNameQ = FeedName[?] // alias to avoid writing [?] when we don't want to specify the Message type
+
   case class OrderbookFeed(tradePair: TradePair) extends FeedName[Orderbook] {
     override val parametersStringForPrometheusLabelValue: String = tradePair.base.name ++ tradePair.quote.name
   }
@@ -48,16 +47,16 @@ object FeedName {
     override val parametersStringForPrometheusLabelValue: String = tradePair.base.name ++ tradePair.quote.name
   }
 
-  given http4s.QueryParamCodec[FeedName[?]] = {
+  given http4s.QueryParamCodec[FeedNameQ] = {
 
-    given borer.Codec[FeedName[?]] = deriveAllCodecs[FeedName[?]]
+    given borer.Codec[FeedNameQ] = deriveAllCodecs[FeedNameQ]
 
     http4s
       .QueryParamCodec.from(
         decodeA = http4s
           .QueryParamDecoder.stringQueryParamDecoder.emap { string =>
             borer
-              .Cbor.decode(ByteVector.fromValidBase64(string, Base64Url)).to[FeedName[?]].valueEither.left
+              .Cbor.decode(ByteVector.fromValidBase64(string, Base64Url)).to[FeedNameQ].valueEither.left
               .map { err =>
                 println(err.getMessage)
                 ParseFailure(sanitized = err.getMessage, details = err.getMessage)
@@ -69,5 +68,5 @@ object FeedName {
       )
   }
 
-  object Matcher extends QueryParamDecoderMatcher[FeedName[?]]("feedName")
+  object Matcher extends QueryParamDecoderMatcher[FeedNameQ]("feedName")
 }

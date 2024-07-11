@@ -12,6 +12,7 @@ import marketData.names.FeedName
 import com.rockthejvm.jobsboard.components.MarketFeedSelectionStage.SelectFeed.LegalFeedNameString
 import scala.util.Try
 import marketData.names.TradePair
+import marketData.names.FeedName.FeedNameQ
 
 sealed trait MarketFeedSelectionStage {
   def view: Html[Msg] = div(selectsBackingView)
@@ -93,7 +94,7 @@ object MarketFeedSelectionStage {
   case class SelectCurrency1(
       previousStep: SelectFeed,
       exchangeSelected: ExchangeName,
-      feedNameAsPartialResult: Currency => Currency => FeedName[?],
+      feedNameAsPartialResult: Currency => Currency => FeedNameQ,
       tradePairs: Map[Currency, Set[Currency]],
       enabled: Boolean = true
   ) extends MarketFeedSelectionStage {
@@ -125,7 +126,7 @@ object MarketFeedSelectionStage {
   case class SelectCurrency2(
       previousStep: SelectCurrency1,
       exchangeSelected: ExchangeName,
-      feedNameAsPartialResult: Currency => FeedName[?],
+      feedNameAsPartialResult: Currency => FeedNameQ,
       secondComponentForFixedFirst: Set[Currency],
       enabled: Boolean = true
   ) extends MarketFeedSelectionStage {
@@ -156,7 +157,7 @@ object MarketFeedSelectionStage {
   case class TotalSelection(
       previousStep: MarketFeedSelectionStage,
       exchangeSelected: ExchangeName,
-      feedName: FeedName[?]
+      feedName: FeedNameQ
   ) extends MarketFeedSelectionStage {
     override def selectsBackingView: List[Html[Msg]] = previousStep.selectsBackingView
   }

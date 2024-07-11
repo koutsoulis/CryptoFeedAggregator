@@ -9,15 +9,16 @@ import prometheus4cats.*
 import prometheus4cats.Gauge.Name
 import prometheus4cats.Metric.Help
 import prometheus4cats.MetricFactory
+import marketData.names.FeedName.FeedNameQ
 
 class ConcurrentStreamsGaugeFactory[F[_]: Async] {
   def make(
       metricsFactory: MetricFactory[F],
       name: Name,
-      helpStringForMetric: Help): Resource[F, Gauge[F, Long, (ExchangeName, FeedName[?])]] =
+      helpStringForMetric: Help): Resource[F, Gauge[F, Long, (ExchangeName, FeedNameQ)]] =
     metricsFactory
       .gauge(name).ofLong.help(helpStringForMetric)
-      .labels[(ExchangeName, FeedName[?])](
+      .labels[(ExchangeName, FeedNameQ)](
         Label.Name("exchange") -> { case (exchange, _) =>
           exchange.toString()
         },

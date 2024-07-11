@@ -17,9 +17,10 @@ import scala.concurrent.duration.DurationInt
 import scala.collection.concurrent.TrieMap
 
 import names.FeedName
+import marketData.names.FeedName.FeedNameQ
 
 trait MarketDataService[F[_]: Async] {
-  def stream(feedName: FeedName[?]): Stream[F, feedName.Message]
+  def stream(feedName: FeedNameQ): Stream[F, feedName.Message]
   def activeCurrencyPairs: F[List[TradePair]]
 }
 
@@ -49,20 +50,20 @@ object MarketDataService {
         subscribersCount: Int
     )
 
-    val locks: F[Map[FeedName[?], Mutex[F]]] = exchange
+    val locks: F[Map[FeedNameQ, Mutex[F]]] = exchange
       .allFeedNames.traverse { feedDef =>
         Mutex.apply[F].map(feedDef -> _)
       }.map(_.toMap)
 
-    val initSFCs: F[Map[FeedName[?], Ref[F, Option[SignalFinalizerCount[?]]]]] = exchange
+    val initSFCs: F[Map[FeedNameQ, Ref[F, Option[SignalFinalizerCount[?]]]]] = exchange
       .allFeedNames.traverse { feedDef =>
         Ref.of[F, Option[SignalFinalizerCount[?]]](None).map(feedDef -> _)
       }.map(_.toMap)
 
-    val activeSubs: F[MapRef[F, FeedName[?], Option[Int]]] =
+    val activeSubs: F[MapRef[F, FeedNameQ, Option[Int]]] =
       F.delay {
         TrieMap
-          .from[FeedName[?], Int](
+          .from[FeedNameQ, Int](
             exchange.allFeedNames.map { _ -> 0 }
           )
       }.map(MapRef.fromScalaConcurrentMap)
@@ -86,7 +87,7 @@ object MarketDataService {
         new MarketDataService[F] {
 
           // TODO: expose Signal instead of Stream to enable testing (move Signal -> Stream logic downstream)
-          override def stream(feed: FeedName[?]): Stream[F, feed.Message] = {
+          override def stream(feed: FeedNameQ): Stream[F, feed.Message] = {
             def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
               locks(feed).lock.surround {
                 for {
@@ -138,7 +139,7 @@ object MarketDataService {
               .get
               .map(_.filter(allCurrencyPairsAsSet.contains)) // drop any tradepairs listed on the exchange after the server's initialization
 
-          private def backingStreamWrappedInPrometheusMetric(feed: FeedName[?]): Stream[F, feed.Message] = Stream.bracket(
+          private def backingStreamWrappedInPrometheusMetric(feed: FeedNameQ): Stream[F, feed.Message] = Stream.bracket(
             incomingConcurrentStreamsGauge.value.inc(exchange.name -> feed)
           )(_ => incomingConcurrentStreamsGauge.value.dec(exchange.name -> feed)) >> exchange.stream(feed)
         }
@@ -147,11 +148,11 @@ object MarketDataService {
   }
 
   def stub[F[_]](using Async[F])(
-      streamStub: (feedName: FeedName[?]) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
+      streamStub: (feedName: FeedNameQ) => Stream[F, feedName.Message] = { _ => Stream.raiseError(new UnsupportedOperationException) },
       activeCurrencyPairsStub: F[List[TradePair]] = List(TradePair(base = Currency("BTC"), quote = Currency("ETH"))).pure[F]
   ) = new MarketDataService[F] {
 
-    override def stream(feed: FeedName[?]): Stream[F, feed.Message] = streamStub(feed)
+    override def stream(feed: FeedNameQ): Stream[F, feed.Message] = streamStub(feed)
 
     override def activeCurrencyPairs: F[List[TradePair]] = activeCurrencyPairsStub
 

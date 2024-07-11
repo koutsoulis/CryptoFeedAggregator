@@ -6,6 +6,7 @@ import marketData.names.FeedName.OrderbookFeed
 import marketData.names.FeedName.Candlesticks
 import marketData.exchange.impl.coinbase.constants
 import monocle.syntax.all.*
+import marketData.names.FeedName.FeedNameQ
 
 // https://docs.cloud.coinbase.com/advanced-trade/docs/ws-overview#sending-messages-without-api-keys
 
@@ -25,7 +26,7 @@ object SubscribeRequest {
   }
 
   def relevantAndHeartbeats(
-      feedName: FeedName[?]
+      feedName: FeedNameQ
   ): List[SubscribeRequest] = {
     val relevantSubscription = feedName match {
       case OrderbookFeed(tradePair) =>

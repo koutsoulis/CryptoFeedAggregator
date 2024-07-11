@@ -32,6 +32,7 @@ import _root_.io.bullet.borer
 import com.rockthejvm.jobsboard.App.Model
 import com.rockthejvm.jobsboard.App.Msg
 import names.ExchangeName
+import marketData.names.FeedName.FeedNameQ
 
 object StreamFromServer {
   def stream[M <: Msg](exchange: ExchangeName, feedName: FeedName[M]): Sub[IO, M] = {
@@ -45,7 +46,7 @@ object StreamFromServer {
                   s"wss://typelevel-server-new.kotopoulion.xyz/${exchange.toString}"
                   // s"ws://localhost:4041/${exchange.toString}"
                 )
-                .map(_.withQueryParam("feedName", feedName: FeedName[?]))
+                .map(_.withQueryParam("feedName", feedName: FeedNameQ))
                 .getOrElse(None.get)
             )
           )
