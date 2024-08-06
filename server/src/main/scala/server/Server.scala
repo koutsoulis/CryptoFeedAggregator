@@ -38,7 +38,8 @@ object Server {
       .withHttpWebSocketApp { wsBuilder =>
         HttpApp {
           servingRoutes
-            .wsRoutes(wsBuilder)
+            .wsRoutesForScalaJS(wsBuilder)
+            .combineK(servingRoutes.wsRoutesForNextJS(wsBuilder))
             .combineK(metricsExporter.metricsRoute)
             .combineK(healthRoute)
             .combineK(

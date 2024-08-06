@@ -23,8 +23,10 @@ import scodec.bits.Bases.Alphabets.Base64Url
 import java.util.Locale
 import marketData.names.Currency
 import marketData.domain.Candlestick
+import servingRoutes.dto.ServerJSON.ToServerJSON
+import servingRoutes.dto.ServerJSON
 
-sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
+sealed trait FeedName[M: borer.Encoder: borer.Decoder: ToServerJSON] {
   type Message = M
 
   def nameWithoutParametersForPrometheusLabelValue: String = this.getClass().getSimpleName()
@@ -34,6 +36,8 @@ sealed trait FeedName[M: borer.Encoder: borer.Decoder] {
   val borerEncoderForMessage: borer.Encoder[M] = summon[borer.Encoder[M]]
 
   val borerDecoderForMessage: borer.Decoder[M] = summon[borer.Decoder[M]]
+
+  val toServerJSON: Message => ServerJSON = summon[ToServerJSON[Message]].serverJSON
 }
 
 object FeedName {
@@ -69,4 +73,12 @@ object FeedName {
   }
 
   object Matcher extends QueryParamDecoderMatcher[FeedNameQ]("feedName")
+
+  object ConstructorParam {
+    def unapply(str: String): Option[TradePair => FeedNameQ] = str match {
+      case "orderbook" => Some(OrderbookFeed.apply)
+      case "candlesticks" => Some(Candlesticks.apply)
+      case _ => None
+    }
+  }
 }

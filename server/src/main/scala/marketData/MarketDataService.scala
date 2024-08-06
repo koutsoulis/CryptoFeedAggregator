@@ -86,7 +86,6 @@ object MarketDataService {
 
         new MarketDataService[F] {
 
-          // TODO: expose Signal instead of Stream to enable testing (move Signal -> Stream logic downstream)
           override def stream(feed: FeedNameQ): Stream[F, feed.Message] = {
             def listenToAndPotentiallySetupBackingFeed = (poll: Poll[F]) =>
               locks(feed).lock.surround {

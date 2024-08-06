@@ -20,9 +20,12 @@ import org.http4s.dsl.io.*
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.typelevel.log4cats.Logger
+import marketData.names.Currency
+import io.circe.syntax.*
 
 trait ServingRoutes[F[_]: Async: Network] {
-  def wsRoutes: WebSocketBuilder2[F] => HttpRoutes[F]
+  def wsRoutesForScalaJS: WebSocketBuilder2[F] => HttpRoutes[F]
+  def wsRoutesForNextJS: WebSocketBuilder2[F] => HttpRoutes[F] = ???
   def httpRoutes: HttpRoutes[F]
 }
 
@@ -31,7 +34,7 @@ object ServingRoutes {
       marketDataServiceByExchange: ExchangeName => MarketDataService[F],
       metricsRegister: MyMetrics.OutgoingConcurrentStreamsGauge[F]
   ) extends ServingRoutes[F] {
-    override def wsRoutes: WebSocketBuilder2[F] => HttpRoutes[F] = { wsBuilder =>
+    override def wsRoutesForScalaJS: WebSocketBuilder2[F] => HttpRoutes[F] = { wsBuilder =>
       HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) :? FeedName.Matcher(feedName) =>
         wsBuilder.build(
           sendReceive = { messagesFromClient =>
@@ -46,7 +49,28 @@ object ServingRoutes {
               } >>
               messagesFromClient
                 .zipRight(messagesToClient) // the client dictates via messagesFromClient the rate at which messages are sent to them
-            // TODO test this behaviour after refactoring MarketDataService
+          }
+        )
+      }
+    }
+
+    override def wsRoutesForNextJS: WebSocketBuilder2[F] => HttpRoutes[F] = { wsBuilder =>
+      HttpRoutes.of[F] { case GET -> Root / ExchangeName(exchange) / FeedName.ConstructorParam(feedNameConstructor) / base / quote =>
+        val feedName = feedNameConstructor(TradePair(Currency(base), Currency(quote)))
+        wsBuilder.build(
+          sendReceive = { messagesFromClient =>
+            val messagesToClient = marketDataServiceByExchange(exchange)
+              .stream(feedName)
+              .map(feedName.toServerJSON)
+              .map(_.asJson.spaces2)
+              .map(WebSocketFrame.Text.apply(_))
+
+            Stream.eval(Logger[F].debug(s"STREAM REQUEST RECEIVED ${feedName.toString()}")) >>
+              Stream.bracket(metricsRegister.value.inc(1, exchange -> feedName)) { _ =>
+                metricsRegister.value.dec(1, exchange -> feedName)
+              } >>
+              messagesFromClient
+                .zipRight(messagesToClient) // the client dictates via messagesFromClient the rate at which messages are sent to them
           }
         )
       }

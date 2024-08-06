@@ -46,7 +46,7 @@ object ServingRoutesSpec extends SimpleIOSuite {
         case _ => ???
       },
       metricsRegister = outgoingConcurrentStreamsGauge
-    ).wsRoutes.map(_.orNotFound)
+    ).wsRoutesForScalaJS.map(_.orNotFound)
 
     WSTestClient.fromHttpWebSocketApp(wsRoutes)
   }
