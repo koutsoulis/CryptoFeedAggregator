@@ -5,8 +5,6 @@ The primary server subproject is under the `./server` directory. There's a live 
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/).
 
-I initially followed along the [Typelevel rite of passage course by Daniel Ciocirlan](https://rockthejvm.com/p/typelevel-rite-of-passage) which I heartily recommend. The course was about building and deploying a shop application, so the only code I kept from it is fragments and the structure of the build.sbt file.
-
 ### Short breakdown of the server subproject. What does each component do?
 
 Arrows pointing upstream
