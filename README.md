@@ -1,7 +1,7 @@
 This repo is mainly about a server that consumes a small fragment of the APIs of Binance and Coinbase (cryptocurrency exchanges) and provides a common API for both downstream.
 Additionally, when multiple downstream subscribers ask for the same market feed, the server procures a single copy of it from the upstream and shares it among them.
 
-The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on AWS. You can query this instance using the demo at <https://app.kotopoulion.xyz>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://grafana.kotopoulion.xyz/d/qWs5DLUIk/number-of-concurrent-streams>.
+The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on ~~AWS~~Hetzner. You can query this instance using the demo at <https://app.kotopoulion.xyz>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://metrics2.kotopoulion.xyz/d/qWs5DLUIk/number-of-concurrent-streams>.
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/).
 
