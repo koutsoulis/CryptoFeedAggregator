@@ -1,0 +1,17 @@
+metrics2.kotopoulion.xyz {
+    log {
+        output file /var/log/caddy/metrics-access.log
+    }
+    reverse_proxy grafana:3000
+}
+
+crypto-feed-aggregator-backend.kotopoulion.xyz {
+    log {
+        output file /var/log/caddy/backend-access.log
+    }
+    reverse_proxy typelevel-backend:4041
+}
+
+opensearch.kotopoulion.xyz {
+    reverse_proxy opensearch-node1:9200
+}

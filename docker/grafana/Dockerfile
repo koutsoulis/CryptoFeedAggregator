@@ -1,4 +1,4 @@
-FROM public.ecr.aws/ubuntu/grafana:latest
+FROM grafana/grafana:latest
 COPY './grafana.ini' '/etc/grafana/grafana.ini'
 COPY './dashboard.json' '/etc/grafana/dashboards/'
 COPY './dashboard_config.yaml' '/etc/grafana/provisioning/dashboards/'

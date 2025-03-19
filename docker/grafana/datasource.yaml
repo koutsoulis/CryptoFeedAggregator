@@ -6,7 +6,7 @@ datasources:
     isDefault: true
     access: proxy
     uid: CbuXHY8Iz
-    url: prometheus:9090
+    url: http://prometheus:9090
     jsonData:
       httpMethod: POST
       manageAlerts: true
