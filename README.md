@@ -1,7 +1,7 @@
 This repo is mainly about a server that consumes a small fragment of the APIs of Binance and Coinbase (cryptocurrency exchanges) and provides a common API for both downstream.
 Additionally, when multiple downstream subscribers ask for the same market feed, the server procures a single copy of it from the upstream and shares it among them.
 
-The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on ~~AWS~~Hetzner. You can query this instance using the demo at <https://app.kotopoulion.xyz>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://metrics2.kotopoulion.xyz/d/qWs5DLUIk/number-of-concurrent-streams>.
+The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on Hetzner Cloud. You can query this instance using the demo at <https://feeds.koutsoulis.work>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://metrics.koutsoulis.work/d/qWs5DLUIk/number-of-concurrent-streams>.
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/).
 
@@ -38,7 +38,7 @@ In addition to this one-off request for the full list of trade pairs, the Market
 
 #### Past initalization
 
-The MarketDataService distributes a data stream from an (cryptocurrency) Exchange to several subscribers at the same time when they all need access to it simultaneously. This can be observed in action by navigating to <https://app.kotopoulion.xyz> on two separate tabs, filling in an identical selection of market feed on both and navigating to <https://grafana.kotopoulion.xyz/d/qWs5DLUIk/number-of-concurrent-streams> on another tab. There should be one stream from Exchange to Server and two copies of the same stream from Server to Demo app.
+The MarketDataService distributes a data stream from an (cryptocurrency) Exchange to several subscribers at the same time when they all need access to it simultaneously. This can be observed in action by navigating to <https://feeds.koutsoulis.work> on two separate tabs, filling in an identical selection of market feed on both and navigating to <https://metrics.koutsoulis.work/d/qWs5DLUIk/number-of-concurrent-streams> on another tab. There should be one stream from Exchange to Server and two copies of the same stream from Server to Demo app.
 
 ```mermaid
 sequenceDiagram
