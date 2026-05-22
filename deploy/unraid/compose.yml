@@ -1,0 +1,9 @@
+services:
+  backend:
+    image: ghcr.io/koutsoulis/cryptofeedaggregator-backend:latest
+    container_name: cryptofeedaggregator-backend
+    restart: unless-stopped
+    environment:
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+    ports:
+      - "4041:4041"

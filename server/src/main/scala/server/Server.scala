@@ -11,9 +11,7 @@ import org.http4s
 import org.http4s.HttpApp
 import org.http4s.HttpRoutes
 import org.http4s.Response
-import org.http4s.Uri
 import org.http4s.dsl.io.*
-import org.http4s.headers.Origin
 import org.http4s.implicits.*
 import org.http4s.server.middleware.CORS
 import org.typelevel.log4cats.Logger
@@ -46,11 +44,7 @@ object Server {
               CORS
                 .policy
                 // .withAllowOriginAll
-                .withAllowOriginHost(
-                  Set(
-                    Origin.Host(Uri.Scheme.https, Uri.RegName("feeds.koutsoulis.work"), None)
-                  )
-                )
+                .withAllowOriginHost(config.corsAllowedOrigins)
                 .httpRoutes(servingRoutes.httpRoutes))
             .orNotFound.run
         }
