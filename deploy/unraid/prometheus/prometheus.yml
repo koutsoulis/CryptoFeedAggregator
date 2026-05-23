@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+  external_labels:
+    monitor: cryptofeedaggregator-unraid
+
+scrape_configs:
+  - job_name: cryptofeedaggregator-backend
+    static_configs:
+      - targets:
+          - backend:4041
