@@ -1,7 +1,7 @@
 This repo is mainly about a server that consumes a small fragment of the APIs of Binance and Coinbase (cryptocurrency exchanges) and provides a common API for both downstream.
 Additionally, when multiple downstream subscribers ask for the same market feed, the server procures a single copy of it from the upstream and shares it among them.
 
-The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on Hetzner Cloud. You can query this instance using the demo at <https://feeds.koutsoulis.work>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://metrics.koutsoulis.work/d/qWs5DLUIk/number-of-concurrent-streams>.
+The primary server subproject is under the `./server` directory. There's a live instance of the server hosted on my residential server. You can query this instance using the demo at <https://feeds.koutsoulis.work>. There's also a Grafana dashboard monitoring which market feeds the server is streaming at any given time, found at <https://metrics.koutsoulis.work/d/qWs5DLUIk/number-of-concurrent-streams>.
 
 I came up with this project to give myself an opportunity to explore the [Typelevel stack](https://typelevel.org/).
 
@@ -93,9 +93,3 @@ sequenceDiagram
 Some directories are named "dto" or "domain". These are there to disambiguate between similarly named DTO and Domain entities. In addition, DTO entities use naming conventions that are not idiomatic to Scala but reflect what they de/serialize from/to.
 
 Directories named "names" declare entities meant to be used as keys in maps, which means equality checking on them should be structural.
-
-### Pragmatic Choices
-
-Could not decide when to use Scala 3 features over scala 2 ones they supersede. Often because I was worried about IDE/ language server maturity.
-
-The app subproject is just a hastily put together demo of how to interact with the server. It’s not an ideal use case due to the way rate limits are enforced by cryptocurrency exchanges such as Binance and Coinbase. These limits are allocated based on the IP addresses of the consumers. Given that these exchanges are relatively generous with their rate limits, there’s no necessity for a server to act as an intermediary that broadcasts data to multiple instances of the demo app.
